@@ -1078,3 +1078,14 @@ header nav ul li, nav ul li {
 #scroll-to-top-btn { 
     bottom: 185px !important; 
 }
+/* --- تصغير وتنسيق زر دخول المالك --- */
+.admin-login-btn, #admin-btn, [class*="admin"] {
+    font-size: 11px !important;
+    padding: 4px 8px !important;
+    border-radius: 12px !important;
+    height: auto !important;
+    min-height: unset !important;
+    line-height: 1.2 !important;
+    white-space: nowrap !important;
+    align-self: center !important;
+}
