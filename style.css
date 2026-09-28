@@ -957,3 +957,63 @@ body.dark-theme #scroll-to-top-btn {
     border-color: #334155;
     color: #f8fafc;
 }
+
+/* --- منع الانزلاق الأفقي وتثبيت عرض الشاشة --- */
+html, body {
+    overflow-x: hidden !important;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+}
+
+/* --- تنسيق زر دخول المالك ليكون في مكان ثابت وغير خارج عن الشاشة --- */
+.admin-login-btn, #admin-btn {
+    position: static !important;
+    transform: none !important;
+    margin: 5px;
+    font-size: 12px;
+    padding: 6px 12px;
+    border-radius: 20px;
+}
+
+/* --- ترتيب الأزرار العائمة على يمين الشاشة فقط بدون تغطية المحتوى --- */
+.floating-btn-container, 
+#cart-btn, 
+#chatbot-btn, 
+#theme-toggle, 
+#scroll-to-top-btn {
+    right: 15px !important;
+    left: auto !important;
+}
+
+/* تحديد مواقع متدرجة للأزرار العائمة من الأسفل إلى الأعلى */
+#chatbot-btn {
+    position: fixed !important;
+    bottom: 20px !important;
+    z-index: 999;
+}
+
+#cart-btn {
+    position: fixed !important;
+    bottom: 75px !important;
+    z-index: 999;
+}
+
+#scroll-to-top-btn {
+    position: fixed !important;
+    bottom: 130px !important;
+    z-index: 998;
+}
+
+/* جعل زر الوضع الليلي صغيراً في أعلى الشاشة بدلاً من العوم في الوسط */
+#theme-toggle {
+    position: fixed !important;
+    top: 15px !important;
+    left: 15px !important;
+    right: auto !important;
+    bottom: auto !important;
+    width: 38px !important;
+    height: 38px !important;
+    font-size: 14px !important;
+    z-index: 1000;
+}
