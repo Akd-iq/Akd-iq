@@ -917,28 +917,6 @@ body.dark-theme .toast {
     background-color: #0f172a;
     color: #f8fafc;
 }
-/* تصميم زر الصعود للأعلى */
-#scroll-to-top-btn {
-    position: fixed;
-    bottom: 205px; /* يوضع فوق زر السلة وباقي الأزرار العائمة */
-    right: 20px;
-    background-color: var(--card-bg, #ffffff);
-    color: var(--text-color, #111827);
-    border: 1.5px solid var(--border-color, #e5e7eb);
-    width: 45px;
-    height: 45px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 18px;
-    cursor: pointer;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
-    z-index: 998;
-    opacity: 0;
-    visibility: hidden;
-    transition: all 0.3s ease;
-}
 
 #scroll-to-top-btn:hover {
     background-color: #25d366;
@@ -958,60 +936,63 @@ body.dark-theme #scroll-to-top-btn {
     color: #f8fafc;
 }
 
-/* --- 1. جعل شريط التنقل العلوي يسحب أفقياً فقط في الموبايل --- */
-nav ul {
-    display: flex !important;
-    overflow-x: auto !important;
-    white-space: nowrap !important;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none; /* إخفاء الشريط في فايرفوكس */
-    padding: 10px 5px !important;
-    margin: 0 !important;
+/* ========================================== */
+/* --- إصلاح الأزرار العائمة والقائمة العلوية --- */
+/* ========================================== */
+
+/* 1. منع السحب الأفقي للموقع ككل */
+html, body {
+    overflow-x: hidden !important;
     max-width: 100% !important;
 }
 
-nav ul::-webkit-scrollbar {
-    display: none; /* إخفاء شريط التمرير في كروم وسفاري */
+/* 2. جعل شريط التنقل العلوي ينسحب أفقياً بمرونة وبدون الخروج عن الشاشة */
+nav, nav ul {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    white-space: nowrap !important;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+}
+
+nav::-webkit-scrollbar, nav ul::-webkit-scrollbar {
+    display: none !important;
 }
 
 nav ul li {
-    display: inline-block !important;
     flex-shrink: 0 !important;
 }
 
-/* --- 2. إعادة ترتيب الأزرار العائمة عمودياً بدون تداخل --- */
-/* البوت في الأسفل */
-#chatbot-btn {
-    position: fixed !important;
-    bottom: 20px !important;
-    right: 15px !important;
-    left: auto !important;
-    z-index: 999;
-}
-
-/* الوضع الليلي فوق البوت */
-#theme-toggle {
-    position: fixed !important;
-    bottom: 80px !important;
-    right: 15px !important;
-    left: auto !important;
-    z-index: 999;
-}
-
-/* السلة فوق الوضع الليلي */
-#cart-btn {
-    position: fixed !important;
-    bottom: 140px !important;
-    right: 15px !important;
-    left: auto !important;
-    z-index: 999;
-}
-
-/* زر الصعود للأعلى في قمة الأزرار ليكون واضحاً تماماً */
+/* 3. ضبط ترتيب الأزرار العائمة عمودياً من الأسفل إلى الأعلى */
+#chatbot-btn,
+#theme-toggle,
+#cart-btn,
 #scroll-to-top-btn {
     position: fixed !important;
-    bottom: 200px !important;
     right: 15px !important;
     left: auto !important;
-    z-index: 1000 !important;
+    width: 48px !important;
+    height: 48px !important;
+    border-radius: 50% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.25) !important;
+    z-index: 9999 !important;
+}
+
+/* الترتيب المتباعد عمودياً */
+#chatbot-btn { bottom: 20px !important; }
+#theme-toggle { bottom: 80px !important; }
+#cart-btn { bottom: 140px !important; }
+#scroll-to-top-btn { bottom: 200px !important; }
+
+/* زر دخول المالك داخل الهيدر وعدم الخروج عن الشاشة */
+.admin-login-btn, #admin-btn {
+    position: static !important;
+    transform: none !important;
+    margin: 5px !important;
 }
