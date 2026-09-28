@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>متجر أكد الإلكتروني | Akkad Store</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Alexandria:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="icon" type="image/jpeg" href="logo1.jpg">
+</head>
+<body>
+<!-- الشريط الإعلاني أعلى الموقع -->
+<div id="announcement-banner" class="announcement-banner">
+    <div class="banner-content">
+        <i class="fa-solid fa-bullhorn"></i>
+        <img id="banner-img" src="" alt="إعلان" style="display: none; max-height: 35px; border-radius: 4px; vertical-align: middle;">
+        <span id="banner-text">أهلاً بكم في متجر أكد!</span>
+    </div>
+    <div style="display: flex; align-items: center; gap: 10px;">
+        <button class="admin-only edit-banner-btn" onclick="openBannerModal()" style="background: #25d366; color: #fff; border: none; padding: 3px 8px; border-radius: 4px; cursor: pointer; font-size: 12px;">✏️ تعديل الإعلان</button>
+        <button class="close-banner-btn" onclick="closeBanner()">✕</button>
+    </div>
+</div>
+
+<!-- نافذة تعديل الإعلان (خاصة بالمالك) -->
+<div id="edit-banner-modal" class="modal" style="display: none;">
+    <div class="modal-content" style="background: #fff; padding: 20px; border-radius: 8px; max-width: 400px; margin: 50px auto; color: #333;">
+        <h3>تعديل الشريط الإعلاني</h3>
+        <form onsubmit="handleSaveBanner(event)">
+            <div style="margin-bottom: 10px;">
+                <label style="display: block; margin-bottom: 5px;">نص الإعلان:</label>
+                <input type="text" id="input-banner-text" required style="width: 100%; padding: 8px; box-sizing: border-box;">
+            </div>
+            <div style="margin-bottom: 15px;">
+                <label style="display: block; margin-bottom: 5px;">اختر صورة الإعلان (اختياري):</label>
+                <input type="file" id="input-banner-file" accept="image/*" style="width: 100%; padding: 5px; box-sizing: border-box;">
+                <button type="button" onclick="removeBannerImg()" style="background: #ef4444; color: #fff; border: none; padding: 4px 8px; border-radius: 4px; margin-top: 5px; cursor: pointer; font-size: 11px;">إزالة الصورة الحالية</button>
+            </div>
+            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                <button type="button" onclick="closeModal('edit-banner-modal')" style="padding: 8px 15px; cursor: pointer;">إلغاء</button>
+                <button type="submit" style="background: #25d366; color: white; border: none; padding: 8px 15px; cursor: pointer; border-radius: 4px;">حفظ والتحديث</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+    <!-- شريط الإشعارات الخاص بوضع المالك -->
+    <div id="admin-banner" class="admin-banner" style="display: none;">
+        <span><i class="fa-solid fa-user-shield"></i> أنت الآن في <strong>وضع المالك (التعديل والنشر)</strong></span>
+        <button onclick="toggleMode()" class="exit-admin-btn">الخروج لوضع الزبون</button>
+    </div>
+
+    <!-- شريط التنقل (Navbar) -->
+    <header class="navbar">
+        <div class="logo">
+            <img src="logo.jpg" alt="أكد - AKD" class="logo-img">
+        </div>
+
+        <nav class="nav-menu">
+            <ul>
+                <li><a href="#home" class="active">الرئيسية</a></li>
+                <li><a href="#categories-section">الأقسام</a></li>
+                <li><a href="#features-section">لماذا نحن؟</a></li>
+                <li><a href="#contact-section">تواصل معنا</a></li>
+            </ul>
+        </nav>
+
+        <div class="header-actions">
+
+            <!-- زر التبديل بين وضع الزبون والمالك -->
+            <button id="mode-toggle-btn" class="mode-btn" onclick="toggleMode()">
+                <i class="fa-solid fa-lock"></i> دخول المالك
+            </button>
+        </div>
+    </header>
+            
+    <!-- الواجهة الرئيسية (Hero Section) -->
+    <section id="home" class="hero">
+        <div class="hero-content">
+            <img src="logo.jpg" alt="أكد - AKD" class="hero-logo">
+            <h1>عالم التقنية والخدمات الإلكترونية بين يديك</h1>
+            <p>أجهزة ذكية، ملحقات أصلية، وخدمات تقديم استمارات إلكترونية متكاملة.</p>
+            <div class="hero-buttons">
+                <a href="#categories-section" class="btn btn-primary">تصفح الأقسام <i class="fa-solid fa-arrow-left"></i></a>
+                <a href="#contact-section" class="btn btn-secondary">تواصل معنا</a>
+            </div>
+        </div>
+    </section>
+<!-- شريط البحث المباشر -->
+<div class="search-container">
+    <div class="search-box">
+        <i class="fa-solid fa-magnifying-glass search-icon"></i>
+        <input type="text" id="store-search-input" placeholder="ابحث عن منتج، خدمة، أو استمارة..." oninput="filterProductsAndServices()">
+        <button id="clear-search-btn" onclick="clearSearchInput()" style="display: none;">✕</button>
+    </div>
+</div>
+    <!-- قسم الأقسام الديناميكية -->
+    <section id="categories-section" class="categories-container">
+        <div class="section-title">
+            <h2>أقسام المتجر والخدمات</h2>
+            <p>تصفح المنتجات والخدمات المتاحة</p>
+            <!-- زر إضافي للمالك لإضافة قسم جديد -->
+            <button class="admin-only add-cat-btn" onclick="openModal('add-category-modal')">
+                <i class="fa-solid fa-folder-plus"></i> إضافة قسم جديد
+            </button>
+        </div>
+
+        <!-- أزرار تبويب الأقسام -->
+        <div class="category-tabs" id="category-tabs"></div>
+
+        <!-- محتوى القسم النشط -->
+        <div id="category-content-area" class="category-content-area"></div>
+    </section>
+
+    <!-- قسم لماذا نحن؟ -->
+    <section id="features-section" class="features-section">
+        <div class="section-title">
+            <h2>لماذا نحن؟</h2>
+            <button class="admin-only add-cat-btn" onclick="openModal('add-feature-modal')">
+                <i class="fa-solid fa-plus"></i> إضافة ميزة جديدة
+            </button>
+        </div>
+        <div class="features-grid" id="features-grid"></div>
+    </section>
+<!-- قسم الأسئلة الشائعة -->
+<section id="faq-section" class="faq-section">
+    <div class="section-title">
+        <h2>الأسئلة الشائعة ❓</h2>
+        <p>إليك إجابات لأبرز الاستفسارات التي يطرحها زبائننا الكرام</p>
+    </div>
+
+    <div class="faq-accordion">
+        <div class="faq-item">
+            <button class="faq-question" onclick="toggleFAQ(this)">
+                <span>كم تستغرق مدة إنجاز الاستمارات والمعاملات الإلكترونية؟</span>
+                <i class="fa-solid fa-chevron-down faq-icon"></i>
+            </button>
+            <div class="faq-answer">
+                <p>يتم التعامل مع جميع الاستمارات والمعاملات فور تقديم الطلب مباشرة، وغالباً ما يستغرق التجهيز من 15 إلى 30 دقيقة فقط خلال أوقات العمل الرسمية.</p>
+            </div>
+        </div>
+
+        <div class="faq-item">
+            <button class="faq-question" onclick="toggleFAQ(this)">
+                <span>ما هي طرق الدفع المتاحة لدى متجر أكد؟</span>
+                <i class="fa-solid fa-chevron-down faq-icon"></i>
+            </button>
+            <div class="faq-answer">
+                <p>نوفر عدة طرق دفع مريحة وآمنة لزبائننا: الدفع عبر زين كاش (Zain Cash)، الماستركارد / الكي كارد، أو الدفع نقداً عند التوصيل للمنتجات والملحقات.</p>
+            </div>
+        </div>
+
+        <div class="faq-item">
+            <button class="faq-question" onclick="toggleFAQ(this)">
+                <span>هل تتوفر خدمة توصيل للمنتجات والأجهزة الذكية؟</span>
+                <i class="fa-solid fa-chevron-down faq-icon"></i>
+            </button>
+            <div class="faq-answer">
+                <p>نعم، تتوفر خدمة التوصيل السريع لجميع المحافظات والمناطق، ويصلك المنتج بأمان مع إمكانية معاينة الطلب قبل الاستلام.</p>
+            </div>
+        </div>
+
+        <div class="faq-item">
+            <button class="faq-question" onclick="toggleFAQ(this)">
+                <span>كيف يمكنني متابعة حالة طلبي بعد التقديم؟</span>
+                <i class="fa-solid fa-chevron-down faq-icon"></i>
+            </button>
+            <div class="faq-answer">
+                <p>يمكنك التحدث مباشرة مع الدعم الفني عبر المساعد الآلي (البوت) أو بالضغط على زر الواتساب وتزويدنا برقم أو اسم الطلب لمتابعة الحالة فوراً.</p>
+            </div>
+        </div>
+    </div>
+</section>
+    <!-- قسم تواصل معنا -->
+    <section id="contact-section" class="contact-section">
+        <div class="section-title">
+            <h2>تواصل معنا</h2>
+            <p>سعداء برفقك واختيارك لنا، يسعدنا تواصلك عبر المنصات التالية:</p>
+            <button class="admin-only add-cat-btn" onclick="openModal('add-contact-modal')">
+                <i class="fa-solid fa-link"></i> إضافة رابط تواصل
+            </button>
+        </div>
+        <div class="contact-grid" id="contact-grid"></div>
+    </section>
+ <!-- ==================== النوافذ المنبثقة (Modals) للمالك ==================== -->
+
+    <!-- 1. نافذة إضافة قسم -->
+    <div id="add-category-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal('add-category-modal')">&times;</span>
+            <h3>إضافة قسم جديد</h3>
+            <form onsubmit="handleAddCategory(event)">
+                <div class="form-group">
+                    <label>اسم القسم:</label>
+                    <input type="text" id="cat-name" required placeholder="مثال: الهواتف الذكية">
+                </div>
+                <div class="form-group">
+                    <label>نوع القسم:</label>
+                    <select id="cat-type">
+                        <option value="trade">بيع وشراء (منتجات)</option>
+                        <option value="service">تقديم خدمة إلكترونية أونلاين</option>
+                    </select>
+                </div>
+                <button type="submit" class="submit-btn">إنشاء القسم</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- 2. نافذة إضافة منتج (لقسم البيع والشراء) -->
+    <div id="add-product-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal('add-product-modal')">&times;</span>
+            <h3>نشر مادة جديدة</h3>
+            <form onsubmit="handleAddProduct(event)">
+                <input type="hidden" id="prod-cat-id">
+                <div class="form-group">
+                    <label>حالة المادة:</label>
+                    <select id="prod-status">
+                        <option value="new">جديد</option>
+                        <option value="used">مستخدم</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>اسم المادة/المنتج:</label>
+                    <input type="text" id="prod-title" required placeholder="مثال: آيفون 15 بروماكس 256GB">
+                </div>
+                <div class="form-group">
+                    <label>السعر:</label>
+                    <input type="text" id="prod-price" required placeholder="مثال: 1,250,000 د.ع">
+                </div>
+                <div class="form-group">
+                    <label>رابط أو اسم صورة المادة:</label>
+                    <input type="text" id="prod-img" placeholder="logo.jpg أو رابط صورة">
+                </div>
+                <div class="form-group">
+                    <label>التفاصيل والمواصفات الكاملة:</label>
+                    <textarea id="prod-desc" required placeholder="اكتب التفاصيل هنا..."></textarea>
+                </div>
+                <button type="submit" class="submit-btn">نشر المادة</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- 3. نافذة إضافة خدمة إلكترونية -->
+    <div id="add-service-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal('add-service-modal')">&times;</span>
+            <h3>إضافة خدمة استمارة إلكترونية</h3>
+            <form onsubmit="handleAddService(event)">
+                <input type="hidden" id="serv-cat-id">
+                <div class="form-group">
+                    <label>نوع الخدمة:</label>
+                    <input type="text" id="serv-title" required placeholder="مثال: التقديم على الرعاية الاجتماعية">
+                </div>
+                <div class="form-group">
+                    <label>تفاصيل الخدمة والشروط المطلوبة:</label>
+                    <textarea id="serv-desc" required placeholder="اكتب تفاصيل المستمسكات المطلوبة..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label>نوع رابط التواصل للتقديم:</label>
+                    <select id="serv-link-type">
+                        <option value="whatsapp">واتساب (WhatsApp)</option>
+                        <option value="telegram">تلغرام (Telegram)</option>
+                        <option value="instagram">انستغرام (Instagram)</option>
+                        <option value="facebook">فيسبوك (Facebook)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>رقم الهاتف أو المعرف/الرابط:</label>
+                    <input type="text" id="serv-link-value" required placeholder="رقم الهاتف أو اليوزر/الرابط">
+                </div>
+                <button type="submit" class="submit-btn">إضافة الخدمة</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- 4. نافذة إضافة ميزة (لماذا نحن؟) -->
+    <div id="add-feature-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal('add-feature-modal')">&times;</span>
+            <h3>إضافة ميزة جديدة</h3>
+            <form onsubmit="handleAddFeature(event)">
+                <div class="form-group">
+                    <label>عنوان الميزة:</label>
+                    <input type="text" id="feat-title" required placeholder="مثال: سرعة في الإنجاز">
+                </div>
+                <div class="form-group">
+                    <label>وصف الميزة:</label>
+                    <textarea id="feat-desc" required placeholder="اكتب توضيحاً بسيطاً..."></textarea>
+                </div>
+                <button type="submit" class="submit-btn">حفظ الميزة</button>
+            </form>
+        </div>
+    </div>
+
+<!-- قسم آراء وتقييمات الزبائن -->
+<section id="reviews-section" class="reviews-section">
+    <div class="section-title">
+        <h2>آراء وتقييمات زبائننا 💬</h2>
+        <p>نعتز بثقتكم ونفخر بتقديم أفضل الخدمات لكم</p>
+    </div>
+
+  <!-- زر إضافة تقييم جديد (متاح لجميع الزبائن) -->
+<button class="add-cat-btn" onclick="openAddReviewModal()" style="margin: 0 auto 20px; display: block; background: #25d366; color: white;">
+    <i class="fa-solid fa-star"></i> أضف رأيك أو تجربتك مع متجر أكد
+</button>
+    <!-- شبكة عرض التقييمات -->
+    <div id="reviews-grid" class="reviews-grid">
+        <!-- يتم عرض التقييمات هنا ديناميكياً -->
+    </div>
+</section>
+
+<!-- نافذة إضافة تقييم جديد (خاصة بالمالك) -->
+<div id="add-review-modal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <h3>إضافة رأي زبون</h3>
+        <form onsubmit="handleSaveReview(event)">
+            <div style="margin-bottom: 10px;">
+                <label style="display: block; margin-bottom: 5px;">اسم الزبون:</label>
+                <input type="text" id="review-name" required placeholder="مثال: أحمد العراقي" style="width: 100%; padding: 8px; box-sizing: border-box;">
+            </div>
+            <div style="margin-bottom: 10px;">
+                <label style="display: block; margin-bottom: 5px;">التقييم بالنجوم:</label>
+                <select id="review-rating" style="width: 100%; padding: 8px; box-sizing: border-box;">
+                    <option value="5">⭐⭐⭐⭐⭐ (5/5)</option>
+                    <option value="4">⭐⭐⭐⭐ (4/5)</option>
+                    <option value="3">⭐⭐⭐ (3/5)</option>
+                </select>
+            </div>
+            <div style="margin-bottom: 15px;">
+                <label style="display: block; margin-bottom: 5px;">رأي الزبون / التجربة:</label>
+                <textarea id="review-text" required placeholder="اكتب تعليق الزبون هنا..." style="width: 100%; height: 80px; padding: 8px; box-sizing: border-box;"></textarea>
+            </div>
+            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                <button type="button" onclick="closeModal('add-review-modal')" style="padding: 8px 15px; cursor: pointer;">إلغاء</button>
+                <button type="submit" style="background: #25d366; color: white; border: none; padding: 8px 15px; cursor: pointer; border-radius: 4px;">حفظ التقييم</button>
+            </div>
+        </form>
+    </div>
+</div>
+    <!-- 5. نافذة إضافة رابط تواصل -->
+    <div id="add-contact-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal('add-contact-modal')">&times;</span>
+            <h3>إضافة وسيلة تواصل</h3>
+            <form onsubmit="handleAddContact(event)">
+                <div class="form-group">
+                    <label>المنصة / النوع:</label>
+                    <select id="cont-platform">
+                        <option value="whatsapp">واتساب</option>
+                        <option value="telegram">تلغرام</option>
+                        <option value="facebook">فيسبوك</option>
+                        <option value="instagram">انستغرام</option>
+                        <option value="phone">هاتف / اتصال</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>اسم الحساب / الرقم الظاهر:</label>
+                    <input type="text" id="cont-label" required placeholder="مثال: صفحتنا على الفيسبوك">
+                </div>
+                <div class="form-group">
+                    <label>الرابط الكامل أو رقم الهاتف:</label>
+                    <input type="text" id="cont-url" required placeholder="https://... أو الرقم مع المفتاح">
+                </div>
+                <button type="submit" class="submit-btn">حفظ الوسيلة</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- الفوتر -->
+    <footer class="footer">
+        <p>جميع الحقوق محفوظة &copy; 2026 - متجر أكد الإلكتروني</p>
+    </footer>
+
+    <script src="script.js"></script>
+    <!-- زر الصعود للأعلى -->
+<button id="scroll-to-top-btn" onclick="scrollToTop()" title="الصعود للأعلى">
+    <i class="fa-solid fa-arrow-up"></i>
+</button>
+    <!-- زر الوضع الليلي العائم (فوق الرد الآلي) -->
+<div id="theme-floating-btn" onclick="toggleTheme()" title="تغيير المظهر">
+    <i id="theme-icon" class="fa-solid fa-moon"></i>
+</div>
+<!-- زر سلة المشتريات العائم -->
+<div id="cart-floating-btn" onclick="openCartModal()" title="عرض السلة">
+    <i class="fa-solid fa-cart-shopping"></i>
+    <span id="cart-count">0</span>
+</div>
+
+<!-- نافذة سلة المشتريات -->
+<div id="cart-modal" class="modal" style="display: none;">
+    <div class="modal-content" style="max-width: 500px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 15px;">
+            <h3>🛒 سلة الطلبات - متجر أكد</h3>
+            <button onclick="closeModal('cart-modal')" style="background: none; border: none; font-size: 18px; cursor: pointer;">✕</button>
+        </div>
+
+        <div id="cart-items-list" style="max-height: 250px; overflow-y: auto; margin-bottom: 15px;">
+            <!-- يتم عرض عناصر السلة هنا -->
+        </div>
+
+        <div style="border-top: 1px solid #eee; padding-top: 10px; margin-bottom: 15px; display: flex; justify-content: space-between; font-weight: bold;">
+            <span>المجموع التقديري:</span>
+            <span id="cart-total-price">0 د.ع</span>
+        </div>
+
+        <div style="display: flex; gap: 10px; justify-content: flex-end;">
+            <button onclick="clearCart()" style="background: #ef4444; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer;">تفريغ السلة</button>
+            <button onclick="sendCartToWhatsApp()" style="background: #25d366; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; display: flex; align-items: center; gap: 5px;">
+                <i class="fa-brands fa-whatsapp"></i> إرسال الطلب عبر الواتساب
+            </button>
+        </div>
+    </div>
+</div>
+   <!-- نافذة الرد الآلي Chatbot Widget -->
+<div id="chat-widget-btn" onclick="toggleChatWindow()">
+    <i class="fa-solid fa-comments"></i>
+</div>
+
+<div id="chat-window" style="display: none;">
+    <div class="chat-header">
+        <span>مساعد متجر أكد الآلي 🤖</span>
+        <button onclick="toggleChatWindow()">✕</button>
+    </div>
+    <div id="chat-messages" class="chat-messages">
+        <div class="msg bot-msg">أهلاً بك في متجر أكد! كيف يمكنني مساعدتك اليوم؟</div>
+    </div>
+    
+    <!-- أزرار الردود السريعة الجاهزة -->
+    <div class="chat-quick-replies">
+        <button onclick="sendQuickReply('الأسعار')">🏷️ الأسعار</button>
+        <button onclick="sendQuickReply('التواصل والواتساب')">📱 التواصل</button>
+        <button onclick="sendQuickReply('الموقع والتوصيل')">📍 الموقع</button>
+        <button onclick="sendQuickReply('طريقة التقديم')">📝 التقديم</button>
+    </div>
+
+    <div class="chat-input-area">
+        <input type="text" id="chat-input" placeholder="اكتب سؤالك هنا..." onkeypress="handleKeyPress(event)">
+        <button onclick="sendMessage()">إرسال</button>
+    </div>
+</div>
+<!-- حاوية إشعارات التنبيه الأنيقة -->
+<div id="toast-notification" class="toast"></div>
+</body>
+</html>
