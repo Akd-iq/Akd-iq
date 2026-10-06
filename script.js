@@ -171,7 +171,7 @@ function renderSlider() {
     var currentSlide = slides[currentSlideIndex];
     var hasUrl = currentSlide.url && currentSlide.url.trim() !== '';
 
-    var imgTag = '<img src="' + currentSlide.img + '" alt="إعلان" style="width:100%; max-height:350px; object-fit:cover; border-radius:12px; cursor:' + (hasUrl ? 'pointer' : 'default') + ';" onclick="handleSlideClick(' + currentSlideIndex + ')">';
+    var imgTag = '<img src="' + escapeHtml(currentSlide.img) + '" alt="إعلان" style="width:100%; max-height:350px; object-fit:cover; border-radius:12px; cursor:' + (hasUrl ? 'pointer' : 'default') + ';" onclick="handleSlideClick(' + currentSlideIndex + ')">';
     
     var controlsHTML = '<div class="slider-controls" style="display:flex; justify-content:space-between; align-items:center; margin-top:10px;">' +
         '<button onclick="prevSlide()" class="sub-btn"><i class="fa-solid fa-chevron-right"></i> السابق</button>' +
@@ -324,8 +324,8 @@ function renderActiveCategoryContent() {
                 var whatsappOrderLink = "https://wa.me/" + storeWhatsappNumber + "?text=" + orderMsg;
 
                 prodsHTML += '<div class="card">' +
-                    '<span class="badge ' + p.status + '">' + statusText + '</span>' +
-                    '<img src="' + imgSrc + '" alt="' + escapeHtml(p.title) + '">' +
+                    '<span class="badge ' + escapeHtml(p.status) + '">' + statusText + '</span>' +
+                    '<img src="' + escapeHtml(imgSrc) + '" alt="' + escapeHtml(p.title) + '">' +
                     '<div class="card-title">' + escapeHtml(p.title) + '</div>' +
                     '<div class="card-price">' + escapeHtml(p.price) + '</div>' +
                     '<div class="card-desc">' + escapeHtml(p.desc) + '</div>' +
@@ -362,7 +362,7 @@ function renderActiveCategoryContent() {
                     '<div class="card-title">' + escapeHtml(s.title) + '</div>' +
                     '<div class="card-desc">' + escapeHtml(s.desc) + '</div>' +
                     '<div class="card-actions-wrapper">' +
-                        '<a href="' + link + '" target="_blank" class="action-btn" style="flex: 2;">' + escapeHtml(actionBtnText) + '</a>' +
+                        '<a href="' + escapeHtml(link) + '" target="_blank" class="action-btn" style="flex: 2;">' + escapeHtml(actionBtnText) + '</a>' +
                         '<button onclick="addToCart(\'' + escapeJsString(s.title) + '\', \'حسب الخدمة\')" class="sub-action-btn" title="إضافة للسلة"><i class="fa-solid fa-cart-plus"></i> السلة</button>' +
                         '<button onclick="shareItem(\'' + escapeJsString(s.title) + '\', \'خدمة إلكترونية\')" class="sub-action-btn" title="مشاركة"><i class="fa-solid fa-share-nodes"></i> مشاركة</button>' +
                     '</div>' +
@@ -539,7 +539,7 @@ function renderContacts() {
     for (var i = 0; i < contacts.length; i++) {
         var c = contacts[i];
         var delBtn = isAdmin ? '<button class="delete-btn admin-only" onclick="deleteContact(' + c.id + ')">حذف</button>' : '';
-        html += '<div class="card" style="text-align:center;"><div class="card-title">' + escapeHtml(c.label) + '</div><a href="' + c.url + '" target="_blank" class="action-btn" style="background:var(--dark-bg);">تواصل عبر ' + escapeHtml(c.platform) + '</a>' + delBtn + '</div>';
+        html += '<div class="card" style="text-align:center;"><div class="card-title">' + escapeHtml(c.label) + '</div><a href="' + escapeHtml(c.url) + '" target="_blank" class="action-btn" style="background:var(--dark-bg);">تواصل عبر ' + escapeHtml(c.platform) + '</a>' + delBtn + '</div>';
     }
     grid.innerHTML = html;
 }
@@ -832,7 +832,7 @@ function sendMessage() {
 function appendMessage(text, className) {
     var messagesDiv = document.getElementById('chat-messages');
     if (!messagesDiv) return;
-    msgEl = document.createElement('div');
+    var msgEl = document.createElement('div');
     msgEl.className = 'msg ' + className;
     msgEl.innerText = text;
     messagesDiv.appendChild(msgEl);
