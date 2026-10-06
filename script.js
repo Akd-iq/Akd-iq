@@ -1,46 +1,107 @@
+// ==========================================
+// 1. تهيئة Firebase وتوصيله بقاعدة البيانات
+// ==========================================
+const firebaseConfig = {
+  apiKey: "AIzaSyDSndzHIgUUtC3FNPsVtLefdTJh5nIdXc",
+  authDomain: "akkad-store-1cddb.firebaseapp.com",
+  databaseURL: "https://akkad-store-1cddb-default-rtdb.firebaseio.com",
+  projectId: "akkad-store-1cddb",
+  storageBucket: "akkad-store-1cddb.firebasestorage.app",
+  messagingSenderId: "813536865622",
+  appId: "1:813536865622:web:36d4fe48208cd654eafaf7"
+};
+
+// تشغيل Firebase
+firebase.initializeApp(firebaseConfig);
+const database = firebase.database();
+
+// ==========================================
+// 2. المتغيرات العامة للمتجر
+// ==========================================
 var isAdmin = false;
 var ADMIN_PASSWORD = "0";
 
-var categories = JSON.parse(localStorage.getItem('akkad_categories')) || [
-    { id: 1, name: 'الهواتف الذكية', type: 'trade' },
-    { id: 2, name: 'تقديم الاستمارات أونلاين', type: 'service' }
-];
+var categories = [];
+var products = [];
+var services = [];
+var features = [];
+var contacts = [];
+var reviews = [];
+var bannerData = { text: "🎉 أهلاً بكم في متجر أكد!", img: "" };
 
-var products = JSON.parse(localStorage.getItem('akkad_products')) || [
-    { id: 101, catId: 1, status: 'new', title: 'آيفون 15 بروماكس', price: '1,450,000 د.ع', img: 'logo.jpg', desc: 'ذاكرة 256GB - جديد بالباكيت مع ضمان لمدة سنة.' },
-    { id: 102, catId: 1, status: 'used', title: 'سامسونج S22 ألترا', price: '680,000 د.ع', img: 'logo.jpg', desc: 'مستخدم بحالة ممتازة جداً بدون أي خدش، ذاكرة 256GB.' }
-];
-
-var services = JSON.parse(localStorage.getItem('akkad_services')) || [
-    { id: 201, catId: 2, title: 'التقديم على القبول المركزي', desc: 'ملء استمارات التقديم للجامعات والمعاهد بدقة عالية.', linkType: 'whatsapp', linkVal: '009647000000000' }
-];
-
-var features = JSON.parse(localStorage.getItem('akkad_features')) || [
-    { id: 1, title: 'سرعة ودقة عالية', desc: 'ننجز معاملتك واستمارتك بأقصى سرعة ممكنة وبدقة متناهية.' },
-    { id: 2, title: 'ضمان وموثوقية', desc: 'كافة منتجاتنا أصلية 100% ومعتمدة مع الضمان.' }
-];
-
-var contacts = JSON.parse(localStorage.getItem('akkad_contacts')) || [
-    { id: 1, platform: 'whatsapp', label: 'واتساب المالك', url: 'https://wa.me/009647000000000' },
-    { id: 2, platform: 'facebook', label: 'صفحتنا على الفيسبوك', url: 'https://facebook.com' }
-];
-
-var activeCatId = categories.length > 0 ? categories[0].id : null;
+var activeCatId = null;
 var activeTradeFilter = 'all';
 
-
-var reviews = JSON.parse(localStorage.getItem('akkad_reviews')) || [];
-
-var statsData = JSON.parse(localStorage.getItem('akkad_stats')) || {
-    orders: "1200+",
-    services: "850+",
-    clients: "3000+"
-};
-
+// ==========================================
+// 3. الاستماع اللحظي للبيانات من Firebase
+// ==========================================
 document.addEventListener('DOMContentLoaded', function() {
-    renderAll();
+    // جلب الأقسام
+    database.ref('categories').on('value', function(snapshot) {
+        var data = snapshot.val();
+        if (data) {
+            categories = Array.isArray(data) ? data : Object.values(data);
+        } else {
+            // بيانات افتراضية أول مرة فقط
+            categories = [
+                { id: 1, name: 'الهواتف الذكية', type: 'trade' },
+                { id: 2, name: 'تقديم الاستمارات أونلاين', type: 'service' }
+            ];
+            database.ref('categories').set(categories);
+        }
+        if (!activeCatId && categories.length > 0) activeCatId = categories[0].id;
+        renderCategoryTabs();
+        renderActiveCategoryContent();
+    });
+
+    // جلب المنتجات
+    database.ref('products').on('value', function(snapshot) {
+        var data = snapshot.val();
+        products = data ? (Array.isArray(data) ? data : Object.values(data)) : [];
+        renderActiveCategoryContent();
+    });
+
+    // جلب الخدمات
+    database.ref('services').on('value', function(snapshot) {
+        var data = snapshot.val();
+        services = data ? (Array.isArray(data) ? data : Object.values(data)) : [];
+        renderActiveCategoryContent();
+    });
+
+    // جلب المميزات
+    database.ref('features').on('value', function(snapshot) {
+        var data = snapshot.val();
+        features = data ? (Array.isArray(data) ? data : Object.values(data)) : [];
+        renderFeatures();
+    });
+
+    // جلب وسائل التواصل
+    database.ref('contacts').on('value', function(snapshot) {
+        var data = snapshot.val();
+        contacts = data ? (Array.isArray(data) ? data : Object.values(data)) : [];
+        renderContacts();
+    });
+
+    // جلب التقييمات
+    database.ref('reviews').on('value', function(snapshot) {
+        var data = snapshot.val();
+        reviews = data ? (Array.isArray(data) ? data : Object.values(data)) : [];
+        renderReviews();
+    });
+
+    // جلب الشريط الإعلاني
+    database.ref('banner').on('value', function(snapshot) {
+        var data = snapshot.val();
+        if (data) bannerData = data;
+        renderBanner();
+    });
+
+    updateCartUI();
 });
 
+// ==========================================
+// 4. وضع المالك والتحكم
+// ==========================================
 function toggleMode() {
     if (!isAdmin) {
         var pwd = prompt("أدخل كلمة مرور المالك:");
@@ -60,20 +121,19 @@ function toggleMode() {
     }
     renderAll();
 }
-// بيانات الشريط الإعلاني المرجعية
-var bannerData = JSON.parse(localStorage.getItem('akkad_banner')) || {
-    text: "🎉 أهلاً بكم في متجر أكد! يتوفر لدينا الآن التقديم الإلكتروني والتوصيل لكافة المحافظات.",
-    img: ""
-};
+
 function renderAll() {
     renderBanner();
     renderCategoryTabs();
     renderActiveCategoryContent();
     renderFeatures();
     renderContacts();
-    renderReviews(); // <--- أضف هذا السطر هنا
+    renderReviews();
 }
 
+// ==========================================
+// 5. عرض ومعالجة الأقسام والمنتجات والخدمات
+// ==========================================
 function renderCategoryTabs() {
     var tabsContainer = document.getElementById('category-tabs');
     if (!tabsContainer) return;
@@ -95,7 +155,7 @@ function switchCategory(catId) {
     renderActiveCategoryContent();
 }
 
- function renderActiveCategoryContent() {
+function renderActiveCategoryContent() {
     var contentArea = document.getElementById('category-content-area');
     if (!contentArea) return;
 
@@ -159,7 +219,7 @@ function switchCategory(catId) {
                 var delBtnServ = isAdmin ? '<button class="delete-btn admin-only" onclick="deleteService(' + s.id + ')">حذف الخدمة</button>' : '';
                 
                 servsHTML += '<div class="card">' +
- '<div class="card-title">' + s.title + '</div>' +
+                    '<div class="card-title">' + s.title + '</div>' +
                     '<div class="card-desc">' + s.desc + '</div>' +
                     '<div class="card-actions-wrapper">' +
                         '<a href="' + link + '" target="_blank" class="action-btn" style="flex: 2;">تقديم الآن</a>' +
@@ -180,32 +240,10 @@ function setTradeFilter(filter) {
     renderActiveCategoryContent();
 }
 
-function renderFeatures() {
-    var grid = document.getElementById('features-grid');
-    if (!grid) return;
-
-    var html = '';
-    for (var i = 0; i < features.length; i++) {
-        var f = features[i];
-        var delBtn = isAdmin ? '<button class="delete-btn admin-only" onclick="deleteFeature(' + f.id + ')">حذف</button>' : '';
-        html += '<div class="card"><div class="card-title">' + f.title + '</div><div class="card-desc">' + f.desc + '</div>' + delBtn + '</div>';
-    }
-    grid.innerHTML = html;
-}
-
-function renderContacts() {
-    var grid = document.getElementById('contact-grid');
-    if (!grid) return;
-
-    var html = '';
-    for (var i = 0; i < contacts.length; i++) {
-        var c = contacts[i];
-        var delBtn = isAdmin ? '<button class="delete-btn admin-only" onclick="deleteContact(' + c.id + ')">حذف</button>' : '';
-        html += '<div class="card" style="text-align:center;"><div class="card-title">' + c.label + '</div><a href="' + c.url + '" target="_blank" class="action-btn" style="background:var(--dark-bg);">تواصل عبر ' + c.platform + '</a>' + delBtn + '</div>';
-    }
-    grid.innerHTML = html;
-}
- function handleAddCategory(e) {
+// ==========================================
+// 6. الإضافة والحذف السحابي (Firebase)
+// ==========================================
+function handleAddCategory(e) {
     e.preventDefault();
     var newCat = {
         id: Date.now(),
@@ -213,10 +251,9 @@ function renderContacts() {
         type: document.getElementById('cat-type').value
     };
     categories.push(newCat);
-    localStorage.setItem('akkad_categories', JSON.stringify(categories));
+    database.ref('categories').set(categories);
     activeCatId = newCat.id;
     closeModal('add-category-modal');
-    renderAll();
 }
 
 function openAddProductModal(catId) {
@@ -236,9 +273,8 @@ function handleAddProduct(e) {
         desc: document.getElementById('prod-desc').value
     };
     products.push(newProd);
-    localStorage.setItem('akkad_products', JSON.stringify(products));
+    database.ref('products').set(products);
     closeModal('add-product-modal');
-    renderActiveCategoryContent();
 }
 
 function openAddServiceModal(catId) {
@@ -257,9 +293,8 @@ function handleAddService(e) {
         linkVal: document.getElementById('serv-link-value').value
     };
     services.push(newServ);
-    localStorage.setItem('akkad_services', JSON.stringify(services));
+    database.ref('services').set(services);
     closeModal('add-service-modal');
-    renderActiveCategoryContent();
 }
 
 function handleAddFeature(e) {
@@ -269,9 +304,8 @@ function handleAddFeature(e) {
         title: document.getElementById('feat-title').value,
         desc: document.getElementById('feat-desc').value
     });
-    localStorage.setItem('akkad_features', JSON.stringify(features));
+    database.ref('features').set(features);
     closeModal('add-feature-modal');
-    renderFeatures();
 }
 
 function handleAddContact(e) {
@@ -282,264 +316,68 @@ function handleAddContact(e) {
         label: document.getElementById('cont-label').value,
         url: document.getElementById('cont-url').value
     });
-    localStorage.setItem('akkad_contacts', JSON.stringify(contacts));
+    database.ref('contacts').set(contacts);
     closeModal('add-contact-modal');
-    renderContacts();
 }
 
 function deleteCategory(id) {
     if (confirm("هل أنت تأكد من حذف هذا القسم بكافة محتوياته؟")) {
         categories = categories.filter(function(c) { return c.id !== id; });
-        localStorage.setItem('akkad_categories', JSON.stringify(categories));
+        database.ref('categories').set(categories);
         activeCatId = categories.length > 0 ? categories[0].id : null;
-        renderAll();
     }
 }
 
 function deleteProduct(id) {
     products = products.filter(function(p) { return p.id !== id; });
-    localStorage.setItem('akkad_products', JSON.stringify(products));
-    renderActiveCategoryContent();
+    database.ref('products').set(products);
 }
 
 function deleteService(id) {
     services = services.filter(function(s) { return s.id !== id; });
-    localStorage.setItem('akkad_services', JSON.stringify(services));
-    renderActiveCategoryContent();
+    database.ref('services').set(services);
 }
 
 function deleteFeature(id) {
     features = features.filter(function(f) { return f.id !== id; });
-    localStorage.setItem('akkad_features', JSON.stringify(features));
-    renderFeatures();
+    database.ref('features').set(features);
 }
 
 function deleteContact(id) {
     contacts = contacts.filter(function(c) { return c.id !== id; });
-    localStorage.setItem('akkad_contacts', JSON.stringify(contacts));
-    renderContacts();
+    database.ref('contacts').set(contacts);
 }
 
-function openModal(id) {
-    var el = document.getElementById(id);
-    if (el) el.style.display = 'block';
-}
-
-function closeModal(id) {
-    var el = document.getElementById(id);
-    if (el) el.style.display = 'none';
-}
-
-// --- نظام الرد الآلي لمتجر أكد ---
-
-function toggleChatWindow() {
-    var win = document.getElementById('chat-window');
-    if (win) {
-        win.style.display = (win.style.display === 'none' || win.style.display === '') ? 'flex' : 'none';
+// ==========================================
+// 7. باقي أقسام الصفحة (مميزات، تواصل، تقييمات، إعلان)
+// ==========================================
+function renderFeatures() {
+    var grid = document.getElementById('features-grid');
+    if (!grid) return;
+    var html = '';
+    for (var i = 0; i < features.length; i++) {
+        var f = features[i];
+        var delBtn = isAdmin ? '<button class="delete-btn admin-only" onclick="deleteFeature(' + f.id + ')">حذف</button>' : '';
+        html += '<div class="card"><div class="card-title">' + f.title + '</div><div class="card-desc">' + f.desc + '</div>' + delBtn + '</div>';
     }
+    grid.innerHTML = html;
 }
 
-function handleKeyPress(e) {
-    if (e.key === 'Enter') {
-        sendMessage();
+function renderContacts() {
+    var grid = document.getElementById('contact-grid');
+    if (!grid) return;
+    var html = '';
+    for (var i = 0; i < contacts.length; i++) {
+        var c = contacts[i];
+        var delBtn = isAdmin ? '<button class="delete-btn admin-only" onclick="deleteContact(' + c.id + ')">حذف</button>' : '';
+        html += '<div class="card" style="text-align:center;"><div class="card-title">' + c.label + '</div><a href="' + c.url + '" target="_blank" class="action-btn" style="background:var(--dark-bg);">تواصل عبر ' + c.platform + '</a>' + delBtn + '</div>';
     }
+    grid.innerHTML = html;
 }
-
-function sendMessage() {
-    var input = document.getElementById('chat-input');
-    var text = input.value.trim();
-    if (!text) return;
-
-    appendMessage(text, 'user-msg');
-    input.value = '';
-
-    setTimeout(function() {
-        var reply = getAutoReply(text);
-        appendMessage(reply, 'bot-msg');
-    }, 500);
-}
-
-function appendMessage(text, className) {
-    var messagesDiv = document.getElementById('chat-messages');
-    var msgEl = document.createElement('div');
-    msgEl.className = 'msg ' + className;
-    msgEl.innerText = text;
-    messagesDiv.appendChild(msgEl);
-    messagesDiv.scrollTop = messagesDiv.scrollHeight;
-}
-
-// هنا يمكنك تعديل وتغيير أي رد أو إضافة شروط جديدة بسهولة
-function getAutoReply(userMessage) {
-    var msg = userMessage.toLowerCase();
-
-    // 1. الاستفسار عن الأسعار
-    if (msg.indexOf('سعر') !== -1 || msg.indexOf('أسعار') !== -1 || msg.indexOf('بكم') !== -1 || msg.indexOf('بيش') !== -1) {
-        return "جميع أسعار المنتجات والخدمات معروضة بدقة في الأقسام أعلاه.";
-    } 
-    
-    // 2. الاستفسار عن طرق التواصل والواتساب
-    else if (msg.indexOf('تواصل') !== -1 || msg.indexOf('واتساب') !== -1 || msg.indexOf('رقم') !== -1 || msg.indexOf('هاتف') !== -1) {
-        return "يمكنك مراسلتنا مباشرة عبر الواتساب أو الفيسبوك من قسم (تواصل معنا) في أسفل الصفحة.";
-    } 
-    
-    // 3. الاستفسار عن الموقع أو الفرع
-    else if (msg.indexOf('موقع') !== -1 || msg.indexOf('عنوان') !== -1 || msg.indexOf('مكان') !== -1 || msg.indexOf('وين') !== -1) {
-        return "خدمات متجر أكد متاحة أونلاين بالكامل مع توفر خدمة التوصيل والتقديم لكافة المحافظات.";
-    } 
-    
-    // 4. التحية والترحيب
-    else if (msg.indexOf('سلام') !== -1 || msg.indexOf('مرحبا') !== -1 || msg.indexOf('هلا') !== -1 || msg.indexOf('هلو') !== -1) {
-        return "أهلاً وسهلاً بك في متجر أكد! كيف يمكننا مساعدتك اليوم؟";
-    } 
-    
-    // 5. التقديم والاستمارات
-    else if (msg.indexOf('تقديم') !== -1 || msg.indexOf('استمارة') !== -1 || msg.indexOf('قبول') !== -1) {
-        return "يمكنك التقديم عبر اختيار قسم (تقديم الاستمارات أونلاين) في الأعلى والضغط على زر (تقديم الآن).";
-    } 
-    
-    // 6. الرد الافتراضي لغير ذلك
-    else {
-        return "شكراً لتواصلك مع متجر أكد! لمزيد من التفاصيل أو المساعدة المباشرة، يرجى مراسلتنا عبر الواتساب.";
-    }
-}
-
-
-// إغلاق الشريط الإعلاني
-function closeBanner() {
-    var banner = document.getElementById('announcement-banner');
-    if (banner) {
-        banner.style.display = 'none';
-    }
-}
-
-
-function renderBanner() {
-    var textEl = document.getElementById('banner-text');
-    var imgEl = document.getElementById('banner-img');
-    
-    if (textEl) {
-        textEl.innerText = bannerData.text;
-    }
-    
-    if (imgEl) {
-        if (bannerData.img && bannerData.img.trim() !== '') {
-            imgEl.src = bannerData.img;
-            imgEl.style.display = 'inline-block';
-        } else {
-            imgEl.style.display = 'none';
-        }
-    }
-}
-
-// فتح نافذة التعديل
-function openBannerModal() {
-    document.getElementById('input-banner-text').value = bannerData.text;
-    document.getElementById('input-banner-file').value = ""; // تفريغ حقل الملف
-    openModal('edit-banner-modal');
-}
-// إزالة الصورة إذا أراد المالك حذفها
-function removeBannerImg() {
-    bannerData.img = "";
-    document.getElementById('input-banner-file').value = "";
-    alert("تمت إزالة الصورة! اضغط على (حفظ والتحديث) لتأكيد التغيير.");
-}
-
-// حفظ الإعلان مع معالجة الصورة المرفقة
-function handleSaveBanner(e) {
-    e.preventDefault();
-    bannerData.text = document.getElementById('input-banner-text').value;
-    
-    var fileInput = document.getElementById('input-banner-file');
-    
-    // إذا قام المالك برفع صورة جديدة من الجهاز
-    if (fileInput.files && fileInput.files[0]) {
-        var reader = new FileReader();
-        reader.onload = function(event) {
-            bannerData.img = event.target.result; // تحويل الصورة لبيانات محلية
-            localStorage.setItem('akkad_banner', JSON.stringify(bannerData));
-            closeModal('edit-banner-modal');
-            renderBanner();
-        };
-        reader.readAsDataURL(fileInput.files[0]);
-    } else {
-        // في حال عدم تغيير الصورة
-        localStorage.setItem('akkad_banner', JSON.stringify(bannerData));
-        closeModal('edit-banner-modal');
-        renderBanner();
-    }
-}
-
-// --- نظام الوضع الليلي والنهاري ---
-
-// استرجاع تفضيل المستخدم السابق أو البدء بالوضع النهاري
-var currentTheme = localStorage.getItem('akkad_theme') || 'light';
-
-// تطبيق الثيم فور تحميل الصفحة
-document.addEventListener('DOMContentLoaded', function() {
-    applyTheme(currentTheme);
-});
-
-function toggleTheme() {
-    currentTheme = (currentTheme === 'light') ? 'dark' : 'light';
-    localStorage.setItem('akkad_theme', currentTheme);
-    applyTheme(currentTheme);
-}
-
-function applyTheme(theme) {
-    var icons = [document.getElementById('theme-icon'), document.getElementById('theme-icon-main')];
-    var texts = [document.getElementById('theme-text'), document.getElementById('theme-text-main')];
-
-    if (theme === 'dark') {
-        document.body.classList.add('dark-theme');
-        icons.forEach(function(icon) { if (icon) icon.className = 'fa-solid fa-sun'; });
-        texts.forEach(function(text) { if (text) text.innerText = 'الوضع النهاري'; });
-    } else {
-        document.body.classList.remove('dark-theme');
-        icons.forEach(function(icon) { if (icon) icon.className = 'fa-solid fa-moon'; });
-        texts.forEach(function(text) { if (text) text.innerText = 'الوضع الليلي'; });
-    }
-}
-
-// --- نظام الوضع الليلي والنهاري العائم ---
-var currentTheme = localStorage.getItem('akkad_theme') || 'light';
-
-document.addEventListener('DOMContentLoaded', function() {
-    applyTheme(currentTheme);
-});
-
-function toggleTheme() {
-    currentTheme = (currentTheme === 'light') ? 'dark' : 'light';
-    localStorage.setItem('akkad_theme', currentTheme);
-    applyTheme(currentTheme);
-}
-
-function applyTheme(theme) {
-    var icon = document.getElementById('theme-icon');
-
-    if (theme === 'dark') {
-        document.body.classList.add('dark-theme');
-        if (icon) icon.className = 'fa-solid fa-sun';
-    } else {
-        document.body.classList.remove('dark-theme');
-        if (icon) icon.className = 'fa-solid fa-moon';
-    }
-}
-// إرسال سؤال سريع عبر الأزرار الجاهزة
-function sendQuickReply(text) {
-    appendMessage(text, 'user-msg');
-    
-    setTimeout(function() {
-        var reply = getAutoReply(text);
-        appendMessage(reply, 'bot-msg');
-    }, 400);
-}
-
-// --- إدارة قسم آراء الزبائن ---
 
 function renderReviews() {
     var grid = document.getElementById('reviews-grid');
     if (!grid) return;
-
     var html = '';
     for (var i = 0; i < reviews.length; i++) {
         var r = reviews[i];
@@ -557,8 +395,90 @@ function renderReviews() {
             delBtn +
         '</div>';
     }
-
     grid.innerHTML = html;
+}
+
+function handleSaveReview(e) {
+    e.preventDefault();
+    var newReview = {
+        id: Date.now(),
+        name: document.getElementById('review-name').value,
+        rating: parseInt(document.getElementById('review-rating').value),
+        text: document.getElementById('review-text').value
+    };
+    reviews.push(newReview);
+    database.ref('reviews').set(reviews);
+    closeModal('add-review-modal');
+}
+
+function deleteReview(id) {
+    if (confirm("هل أنت تأكد من حذف هذا التقييم؟")) {
+        reviews = reviews.filter(function(r) { return r.id !== id; });
+        database.ref('reviews').set(reviews);
+    }
+}
+
+function renderBanner() {
+    var textEl = document.getElementById('banner-text');
+    var imgEl = document.getElementById('banner-img');
+    if (textEl) textEl.innerText = bannerData.text;
+    if (imgEl) {
+        if (bannerData.img && bannerData.img.trim() !== '') {
+            imgEl.src = bannerData.img;
+            imgEl.style.display = 'inline-block';
+        } else {
+            imgEl.style.display = 'none';
+        }
+    }
+}
+
+function handleSaveBanner(e) {
+    e.preventDefault();
+    bannerData.text = document.getElementById('input-banner-text').value;
+    var fileInput = document.getElementById('input-banner-file');
+    
+    if (fileInput.files && fileInput.files[0]) {
+        var reader = new FileReader();
+        reader.onload = function(event) {
+            bannerData.img = event.target.result;
+            database.ref('banner').set(bannerData);
+            closeModal('edit-banner-modal');
+        };
+        reader.readAsDataURL(fileInput.files[0]);
+    } else {
+        database.ref('banner').set(bannerData);
+        closeModal('edit-banner-modal');
+    }
+}
+
+function removeBannerImg() {
+    bannerData.img = "";
+    document.getElementById('input-banner-file').value = "";
+    alert("تمت إزالة الصورة! اضغط على (حفظ والتحديث) لتأكيد التغيير.");
+}
+
+function openBannerModal() {
+    document.getElementById('input-banner-text').value = bannerData.text;
+    document.getElementById('input-banner-file').value = "";
+    openModal('edit-banner-modal');
+}
+
+function closeBanner() {
+    var banner = document.getElementById('announcement-banner');
+    if (banner) banner.style.display = 'none';
+}
+
+// ==========================================
+// 8. النوافذ، السلة، البحث، والخدمات الإضافية
+// ==========================================
+function openModal(id) {
+    var el = document.getElementById(id);
+    if (el) el.style.display = 'block';
+}
+
+function closeModal(id) {
+    var el = document.getElementById(id);
+    if (el) el.style.display = 'none';
 }
 
 function openAddReviewModal() {
@@ -567,78 +487,14 @@ function openAddReviewModal() {
     openModal('add-review-modal');
 }
 
-function handleSaveReview(e) {
-    e.preventDefault();
-    var name = document.getElementById('review-name').value;
-    var rating = parseInt(document.getElementById('review-rating').value);
-    var text = document.getElementById('review-text').value;
-
-    var newReview = {
-        id: Date.now(),
-        name: name,
-        rating: rating,
-        text: text
-    };
-
-    reviews.push(newReview);
-    localStorage.setItem('akkad_reviews', JSON.stringify(reviews));
-    closeModal('add-review-modal');
-    renderReviews();
-}
-
-function deleteReview(id) {
-    if (confirm("هل أنت تأكد من حذف هذا التقييم؟")) {
-        reviews = reviews.filter(function(r) { return r.id !== id; });
-        localStorage.setItem('akkad_reviews', JSON.stringify(reviews));
-        renderReviews();
-    }
-}
-
-// --- نظام البحث المباشر والفلترة ---
-
-function filterProductsAndServices() {
-    var searchInput = document.getElementById('store-search-input');
-    var clearBtn = document.getElementById('clear-search-btn');
-    if (!searchInput) return;
-
-    var query = searchInput.value.trim().toLowerCase();
-
-    // إظهار أو إخفاء زر تفريغ البحث
-    if (clearBtn) {
-        clearBtn.style.display = query.length > 0 ? 'inline-block' : 'none';
-    }
-
-    // البحث داخل بطاقات الكروت المعروضة حالياً
-    var cards = document.querySelectorAll('.card, .product-card, .service-card');
-    
-    cards.forEach(function(card) {
-        var cardText = card.innerText.toLowerCase();
-        if (cardText.includes(query)) {
-            card.style.display = ''; // إظهار الكارت
-        } else {
-            card.style.display = 'none'; // إخفاء الكارت
-        }
-    });
-}
-
-function clearSearchInput() {
-    var searchInput = document.getElementById('store-search-input');
-    if (searchInput) {
-        searchInput.value = '';
-        filterProductsAndServices();
-    }
-}// --- نظام سلة المشتريات ---
+// السلة تحافظ على الـ localStorage لأنها شخصية بكل متصفح
 var cart = JSON.parse(localStorage.getItem('akkad_cart')) || [];
-
-document.addEventListener('DOMContentLoaded', function() {
-    updateCartUI();
-});
 
 function addToCart(title, price) {
     cart.push({ title: title, price: price });
     localStorage.setItem('akkad_cart', JSON.stringify(cart));
     updateCartUI();
-  showToast("🛒 تمت إضافة (" + title + ") إلى السلة بنجاح!");
+    showToast("🛒 تمت إضافة (" + title + ") إلى السلة بنجاح!");
 }
 
 function updateCartUI() {
@@ -667,8 +523,6 @@ function updateCartUI() {
                 '<button onclick="removeFromCart(' + i + ')" style="background:none; border:none; color:#ef4444; cursor:pointer;">✕</button>' +
             '</div>' +
         '</div>';
-        
-        // استخراج الرقم من السعر إذا كان يحتوي على أرقام
         var numericPrice = parseInt(cart[i].price.replace(/[^0-9]/g, '')) || 0;
         total += numericPrice;
     }
@@ -702,7 +556,7 @@ function sendCartToWhatsApp() {
         return;
     }
 
-    var phone = "9647700000000"; // ضَع رقم واتساب متجر أكد هنا
+    var phone = "9647817711454";
     var message = "السلام عليكم متجر أكد، أرغب بطلب الخدمات/المنتجات التالية:\n\n";
 
     for (var i = 0; i < cart.length; i++) {
@@ -710,98 +564,127 @@ function sendCartToWhatsApp() {
     }
 
     message += "\nيرجى تأكيد الطلب وتزويدي بالتفاصيل.";
-
-    var url = "https://wa.me/" + phone + "?text=" + encodeURIComponent(message);
-    window.open(url, '_blank');
+    window.open("https://wa.me/" + phone + "?text=" + encodeURIComponent(message), '_blank');
 }
-// --- نظام الأسئلة الشائعة (FAQ Accordion) ---
 
-function toggleFAQ(buttonElement) {
-    var item = buttonElement.parentElement;
-    var isActive = item.classList.contains('active');
+// الثيم والوضع الليلي (شخصي)
+var currentTheme = localStorage.getItem('akkad_theme') || 'light';
 
-    // إغلاق باقي الأسئلة للحفاظ على التنسيق
-    var allItems = document.querySelectorAll('.faq-item');
-    allItems.forEach(function(el) {
-        el.classList.remove('active');
-    });
+function toggleTheme() {
+    currentTheme = (currentTheme === 'light') ? 'dark' : 'light';
+    localStorage.setItem('akkad_theme', currentTheme);
+    applyTheme(currentTheme);
+}
 
-    // فتح السؤال المقتطع أو إغلاقه إذا كان مفتوحاً
-    if (!isActive) {
-        item.classList.add('active');
+function applyTheme(theme) {
+    var icon = document.getElementById('theme-icon');
+    if (theme === 'dark') {
+        document.body.classList.add('dark-theme');
+        if (icon) icon.className = 'fa-solid fa-sun';
+    } else {
+        document.body.classList.remove('dark-theme');
+        if (icon) icon.className = 'fa-solid fa-moon';
     }
 }
 
+function filterProductsAndServices() {
+    var searchInput = document.getElementById('store-search-input');
+    var clearBtn = document.getElementById('clear-search-btn');
+    if (!searchInput) return;
 
+    var query = searchInput.value.trim().toLowerCase();
 
-// --- نظام مشاركة المنتجات والخدمات ---
+    if (clearBtn) clearBtn.style.display = query.length > 0 ? 'inline-block' : 'none';
 
-// --- نظام المشاركة الشامل لجميع البرامج ---
+    var cards = document.querySelectorAll('.card, .product-card, .service-card');
+    cards.forEach(function(card) {
+        var cardText = card.innerText.toLowerCase();
+        card.style.display = cardText.includes(query) ? '' : 'none';
+    });
+}
+
+function clearSearchInput() {
+    var searchInput = document.getElementById('store-search-input');
+    if (searchInput) {
+        searchInput.value = '';
+        filterProductsAndServices();
+    }
+}
 
 function shareItem(title, price) {
     var shareText = "شاهد هذا المنتج/الخدمة من متجر أكد:\n📌 " + title + "\n💰 السعر: " + price;
     var currentUrl = window.location.href;
 
-    // إذا كان الزبون يتصفح من الموبايل ومتصفحه يدعم المشاركة العامة
     if (navigator.share) {
-        navigator.share({
-            title: title,
-            text: shareText,
-            url: currentUrl
-        }).catch(function(err) {
-            console.log("تم إلغاء المشاركة");
-        });
+        navigator.share({ title: title, text: shareText, url: currentUrl }).catch(function() {});
     } else {
-        // إذا كان على الكمبيوتر، نفتح له قائمة مشاركة تشمل جميع البرامج + نسخ الرابط
         var fullMessage = shareText + "\n🔗 " + currentUrl;
-        
-        var optionsText = "اختر تطبيقاً للمشاركة عبره:\n\n" +
-            "1️⃣ واتساب (WhatsApp)\n" +
-            "2️⃣ تليجرام (Telegram)\n" +
-            "3️⃣ نسخ النص والرابط\n";
-
-        var choice = prompt(optionsText + "\nاكتب رقم الخيار (1 أو 2 أو 3):", "1");
-
-        if (choice === "1") {
-            window.open("https://api.whatsapp.com/send?text=" + encodeURIComponent(fullMessage), '_blank');
-        } else if (choice === "2") {
-            window.open("https://t.me/share/url?url=" + encodeURIComponent(currentUrl) + "&text=" + encodeURIComponent(shareText), '_blank');
-        } else if (choice === "3") {
-            navigator.clipboard.writeText(fullMessage).then(function() {
-                showToast("📋 تم نسخ النص والرابط بنجاح!");
-            });
+        var choice = prompt("1️⃣ واتساب\n2️⃣ تليجرام\n3️⃣ نسخ النص\nاكتب رقم الخيار:", "1");
+        if (choice === "1") window.open("https://api.whatsapp.com/send?text=" + encodeURIComponent(fullMessage), '_blank');
+        else if (choice === "2") window.open("https://t.me/share/url?url=" + encodeURIComponent(currentUrl) + "&text=" + encodeURIComponent(shareText), '_blank');
+        else if (choice === "3") {
+            navigator.clipboard.writeText(fullMessage).then(function() { showToast("📋 تم نسخ النص والرابط بنجاح!"); });
         }
     }
 }
-// --- دالة إشعارات التنبيه الأنيقة (Toast Notification) ---
+
 function showToast(message) {
     var toast = document.getElementById("toast-notification");
     if (!toast) return;
-
     toast.innerText = message;
     toast.className = "toast show";
-
-    setTimeout(function() {
-        toast.className = toast.className.replace("toast show", "toast");
-    }, 3000);
+    setTimeout(function() { toast.className = toast.className.replace("toast show", "toast"); }, 3000);
 }
-// --- دالة زر الصعود للأعلى ---
 
 window.addEventListener('scroll', function() {
     var scrollTopBtn = document.getElementById('scroll-to-top-btn');
-    if (!scrollTopBtn) return;
-
-    // إظهار الزر بعد النزول 300 بكسل في الصفحة
-    if (window.scrollY > 300) {
-        scrollTopBtn.classList.add('show');
-    } else {
-        scrollTopBtn.classList.remove('show');
+    if (scrollTopBtn) {
+        if (window.scrollY > 300) scrollTopBtn.classList.add('show');
+        else scrollTopBtn.classList.remove('show');
     }
 });
 
 function scrollToTop() {
-    window.scrollTo({
-        top: 0,
-        behavior: 'smooth' // حركة صعود سلسة
-    });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// البوت والرد الآلي
+function toggleChatWindow() {
+    var win = document.getElementById('chat-window');
+    if (win) win.style.display = (win.style.display === 'none' || win.style.display === '') ? 'flex' : 'none';
+}
+
+function handleKeyPress(e) { if (e.key === 'Enter') sendMessage(); }
+
+function sendMessage() {
+    var input = document.getElementById('chat-input');
+    var text = input.value.trim();
+    if (!text) return;
+    appendMessage(text, 'user-msg');
+    input.value = '';
+    setTimeout(function() {
+        appendMessage(getAutoReply(text), 'bot-msg');
+    }, 500);
+}
+
+function appendMessage(text, className) {
+    var messagesDiv = document.getElementById('chat-messages');
+    var msgEl = document.createElement('div');
+    msgEl.className = 'msg ' + className;
+    msgEl.innerText = text;
+    messagesDiv.appendChild(msgEl);
+    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+}
+
+function getAutoReply(userMessage) {
+    var msg = userMessage.toLowerCase();
+    if (msg.indexOf('سعر') !== -1 || msg.indexOf('أسعار') !== -1 || msg.indexOf('بكم') !== -1) return "جميع أسعار المنتجات والخدمات معروضة بدقة في الأقسام أعلاه.";
+    if (msg.indexOf('تواصل') !== -1 || msg.indexOf('واتساب') !== -1 || msg.indexOf('رقم') !== -1) return "يمكنك مراسلتنا مباشرة عبر الواتساب من قسم التواصل.";
+    if (msg.indexOf('سلام') !== -1 || msg.indexOf('مرحبا') !== -1 || msg.indexOf('هلا') !== -1) return "أهلاً وسهلاً بك في متجر أكد! كيف يمكننا مساعدتك اليوم؟";
+    return "شكراً لتواصلك مع متجر أكد! لمزيد من التفاصيل يرجى مراسلتنا عبر الواتساب.";
+}
+
+function sendQuickReply(text) {
+    appendMessage(text, 'user-msg');
+    setTimeout(function() { appendMessage(getAutoReply(text), 'bot-msg'); }, 400);
 }
