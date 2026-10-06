@@ -36,6 +36,9 @@ var activeTradeFilter = 'all';
 // 3. الاستماع اللحظي للبيانات من Firebase
 // ==========================================
 document.addEventListener('DOMContentLoaded', function() {
+    // تطبيق الثيم المحفوظ
+    applyTheme(currentTheme);
+
     // جلب الأقسام
     database.ref('categories').on('value', function(snapshot) {
         var data = snapshot.val();
@@ -108,16 +111,20 @@ function toggleMode() {
         if (pwd === ADMIN_PASSWORD) {
             isAdmin = true;
             document.body.classList.add('admin-mode');
-            document.getElementById('admin-banner').style.display = 'flex';
-            document.getElementById('mode-toggle-btn').style.display = 'none';
+            var adminBanner = document.getElementById('admin-banner');
+            var modeBtn = document.getElementById('mode-toggle-btn');
+            if (adminBanner) adminBanner.style.display = 'flex';
+            if (modeBtn) modeBtn.style.display = 'none';
         } else if (pwd !== null) {
             alert("كلمة المرور غير صحيحة!");
         }
     } else {
         isAdmin = false;
         document.body.classList.remove('admin-mode');
-        document.getElementById('admin-banner').style.display = 'none';
-        document.getElementById('mode-toggle-btn').style.display = 'inline-block';
+        var adminBanner = document.getElementById('admin-banner');
+        var modeBtn = document.getElementById('mode-toggle-btn');
+        if (adminBanner) adminBanner.style.display = 'none';
+        if (modeBtn) modeBtn.style.display = 'inline-block';
     }
     renderAll();
 }
@@ -143,7 +150,7 @@ function renderCategoryTabs() {
         var cat = categories[i];
         var delBtn = isAdmin ? '<i class="fa-solid fa-circle-xmark admin-only" onclick="deleteCategory(' + cat.id + ')" style="color:red; cursor:pointer; position:absolute; top:-5px; left:-5px;"></i>' : '';
         var activeClass = (cat.id === activeCatId) ? 'active' : '';
-        html += '<div style="display:inline-block; position:relative;"><button class="tab-btn ' + activeClass + '" onclick="switchCategory(' + cat.id + ')">' + cat.name + '</button>' + delBtn + '</div>';
+        html += '<div style="display:inline-block; position:relative; margin: 3px;"><button class="tab-btn ' + activeClass + '" onclick="switchCategory(' + cat.id + ')">' + escapeHtml(cat.name) + '</button>' + delBtn + '</div>';
     }
     tabsContainer.innerHTML = html;
 }
@@ -188,14 +195,14 @@ function renderActiveCategoryContent() {
 
                 prodsHTML += '<div class="card">' +
                     '<span class="badge ' + p.status + '">' + statusText + '</span>' +
-                    '<img src="' + imgSrc + '" alt="' + p.title + '">' +
-                    '<div class="card-title">' + p.title + '</div>' +
-                    '<div class="card-price">' + p.price + '</div>' +
-                    '<div class="card-desc">' + p.desc + '</div>' +
+                    '<img src="' + imgSrc + '" alt="' + escapeHtml(p.title) + '">' +
+                    '<div class="card-title">' + escapeHtml(p.title) + '</div>' +
+                    '<div class="card-price">' + escapeHtml(p.price) + '</div>' +
+                    '<div class="card-desc">' + escapeHtml(p.desc) + '</div>' +
                     '<div class="card-actions-wrapper">' +
                         '<a href="' + whatsappOrderLink + '" target="_blank" class="order-btn" style="flex: 2;"><i class="fa-brands fa-whatsapp"></i> طلب الآن</a>' +
-                        '<button onclick="addToCart(\'' + p.title + '\', \'' + p.price + '\')" class="sub-action-btn" title="إضافة للسلة"><i class="fa-solid fa-cart-plus"></i> السلة</button>' +
-                        '<button onclick="shareItem(\'' + p.title + '\', \'' + p.price + '\')" class="sub-action-btn" title="مشاركة"><i class="fa-solid fa-share-nodes"></i> مشاركة</button>' +
+                        '<button onclick="addToCart(\'' + escapeJsString(p.title) + '\', \'' + escapeJsString(p.price) + '\')" class="sub-action-btn" title="إضافة للسلة"><i class="fa-solid fa-cart-plus"></i> السلة</button>' +
+                        '<button onclick="shareItem(\'' + escapeJsString(p.title) + '\', \'' + escapeJsString(p.price) + '\')" class="sub-action-btn" title="مشاركة"><i class="fa-solid fa-share-nodes"></i> مشاركة</button>' +
                     '</div>' +
                     delBtn +
                 '</div>';
@@ -217,19 +224,17 @@ function renderActiveCategoryContent() {
                     link = 'https://wa.me/' + s.linkVal + '?text=' + encodeURIComponent('مرحباً، أريد التقديم على ' + s.title);
                 }
                 
-                // نص الزر المخصص للخدمة أو الافتراضي
                 var actionBtnText = (s.btnText && s.btnText.trim() !== "") ? s.btnText : "تقديم الآن";
-
                 var delBtnServ = isAdmin ? '<button class="delete-btn admin-only" onclick="deleteService(' + s.id + ')">حذف الخدمة</button>' : '';
                 var editBtnText = isAdmin ? '<button class="admin-only" onclick="editServiceBtnText(' + s.id + ')" style="margin-top: 5px; background: #0284c7; color: #fff; border: none; padding: 5px 10px; border-radius: 6px; cursor: pointer; font-size: 0.85rem;"><i class="fa-solid fa-pen"></i> تعديل نص الزر</button>' : '';
 
                 servsHTML += '<div class="card">' +
-                    '<div class="card-title">' + s.title + '</div>' +
-                    '<div class="card-desc">' + s.desc + '</div>' +
+                    '<div class="card-title">' + escapeHtml(s.title) + '</div>' +
+                    '<div class="card-desc">' + escapeHtml(s.desc) + '</div>' +
                     '<div class="card-actions-wrapper">' +
-                        '<a href="' + link + '" target="_blank" class="action-btn" style="flex: 2;">' + actionBtnText + '</a>' +
-                        '<button onclick="addToCart(\'' + s.title + '\', \'حسب الخدمة\')" class="sub-action-btn" title="إضافة للسلة"><i class="fa-solid fa-cart-plus"></i> السلة</button>' +
-                        '<button onclick="shareItem(\'' + s.title + '\', \'خدمة إلكترونية\')" class="sub-action-btn" title="مشاركة"><i class="fa-solid fa-share-nodes"></i> مشاركة</button>' +
+                        '<a href="' + link + '" target="_blank" class="action-btn" style="flex: 2;">' + escapeHtml(actionBtnText) + '</a>' +
+                        '<button onclick="addToCart(\'' + escapeJsString(s.title) + '\', \'حسب الخدمة\')" class="sub-action-btn" title="إضافة للسلة"><i class="fa-solid fa-cart-plus"></i> السلة</button>' +
+                        '<button onclick="shareItem(\'' + escapeJsString(s.title) + '\', \'خدمة إلكترونية\')" class="sub-action-btn" title="مشاركة"><i class="fa-solid fa-share-nodes"></i> مشاركة</button>' +
                     '</div>' +
                     editBtnText +
                     delBtnServ +
@@ -246,7 +251,6 @@ function setTradeFilter(filter) {
     renderActiveCategoryContent();
 }
 
-// دالة لتعديل نص الزر مباشرة من حساب المالك للخدمة المحددة
 function editServiceBtnText(serviceId) {
     var serviceIndex = -1;
     for (var i = 0; i < services.length; i++) {
@@ -272,14 +276,18 @@ function editServiceBtnText(serviceId) {
 // ==========================================
 function handleAddCategory(e) {
     e.preventDefault();
+    var nameEl = document.getElementById('cat-name');
+    var typeEl = document.getElementById('cat-type');
+    
     var newCat = {
         id: Date.now(),
-        name: document.getElementById('cat-name').value,
-        type: document.getElementById('cat-type').value
+        name: nameEl.value.trim(),
+        type: typeEl.value
     };
     categories.push(newCat);
     database.ref('categories').set(categories);
     activeCatId = newCat.id;
+    nameEl.value = '';
     closeModal('add-category-modal');
 }
 
@@ -294,10 +302,10 @@ function handleAddProduct(e) {
         id: Date.now(),
         catId: parseInt(document.getElementById('prod-cat-id').value),
         status: document.getElementById('prod-status').value,
-        title: document.getElementById('prod-title').value,
-        price: document.getElementById('prod-price').value,
-        img: document.getElementById('prod-img').value || 'logo.jpg',
-        desc: document.getElementById('prod-desc').value
+        title: document.getElementById('prod-title').value.trim(),
+        price: document.getElementById('prod-price').value.trim(),
+        img: document.getElementById('prod-img').value.trim() || 'logo.jpg',
+        desc: document.getElementById('prod-desc').value.trim()
     };
     products.push(newProd);
     database.ref('products').set(products);
@@ -317,10 +325,10 @@ function handleAddService(e) {
     var newServ = {
         id: Date.now(),
         catId: parseInt(document.getElementById('serv-cat-id').value),
-        title: document.getElementById('serv-title').value,
-        desc: document.getElementById('serv-desc').value,
+        title: document.getElementById('serv-title').value.trim(),
+        desc: document.getElementById('serv-desc').value.trim(),
         linkType: document.getElementById('serv-link-type').value,
-        linkVal: document.getElementById('serv-link-value').value,
+        linkVal: document.getElementById('serv-link-value').value.trim(),
         btnText: customBtnText
     };
     services.push(newServ);
@@ -332,8 +340,8 @@ function handleAddFeature(e) {
     e.preventDefault();
     features.push({
         id: Date.now(),
-        title: document.getElementById('feat-title').value,
-        desc: document.getElementById('feat-desc').value
+        title: document.getElementById('feat-title').value.trim(),
+        desc: document.getElementById('feat-desc').value.trim()
     });
     database.ref('features').set(features);
     closeModal('add-feature-modal');
@@ -344,8 +352,8 @@ function handleAddContact(e) {
     contacts.push({
         id: Date.now(),
         platform: document.getElementById('cont-platform').value,
-        label: document.getElementById('cont-label').value,
-        url: document.getElementById('cont-url').value
+        label: document.getElementById('cont-label').value.trim(),
+        url: document.getElementById('cont-url').value.trim()
     });
     database.ref('contacts').set(contacts);
     closeModal('add-contact-modal');
@@ -353,29 +361,29 @@ function handleAddContact(e) {
 
 function deleteCategory(id) {
     if (confirm("هل أنت تأكد من حذف هذا القسم بكافة محتوياته؟")) {
-        categories = categories.filter(function(c) { return c.id !== id; });
+        categories = categories.filter(function(c) { return String(c.id) !== String(id); });
         database.ref('categories').set(categories);
         activeCatId = categories.length > 0 ? categories[0].id : null;
     }
 }
 
 function deleteProduct(id) {
-    products = products.filter(function(p) { return p.id !== id; });
+    products = products.filter(function(p) { return String(p.id) !== String(id); });
     database.ref('products').set(products);
 }
 
 function deleteService(id) {
-    services = services.filter(function(s) { return s.id !== id; });
+    services = services.filter(function(s) { return String(s.id) !== String(id); });
     database.ref('services').set(services);
 }
 
 function deleteFeature(id) {
-    features = features.filter(function(f) { return f.id !== id; });
+    features = features.filter(function(f) { return String(f.id) !== String(id); });
     database.ref('features').set(features);
 }
 
 function deleteContact(id) {
-    contacts = contacts.filter(function(c) { return c.id !== id; });
+    contacts = contacts.filter(function(c) { return String(c.id) !== String(id); });
     database.ref('contacts').set(contacts);
 }
 
@@ -389,7 +397,7 @@ function renderFeatures() {
     for (var i = 0; i < features.length; i++) {
         var f = features[i];
         var delBtn = isAdmin ? '<button class="delete-btn admin-only" onclick="deleteFeature(' + f.id + ')">حذف</button>' : '';
-        html += '<div class="card"><div class="card-title">' + f.title + '</div><div class="card-desc">' + f.desc + '</div>' + delBtn + '</div>';
+        html += '<div class="card"><div class="card-title">' + escapeHtml(f.title) + '</div><div class="card-desc">' + escapeHtml(f.desc) + '</div>' + delBtn + '</div>';
     }
     grid.innerHTML = html;
 }
@@ -401,7 +409,7 @@ function renderContacts() {
     for (var i = 0; i < contacts.length; i++) {
         var c = contacts[i];
         var delBtn = isAdmin ? '<button class="delete-btn admin-only" onclick="deleteContact(' + c.id + ')">حذف</button>' : '';
-        html += '<div class="card" style="text-align:center;"><div class="card-title">' + c.label + '</div><a href="' + c.url + '" target="_blank" class="action-btn" style="background:var(--dark-bg);">تواصل عبر ' + c.platform + '</a>' + delBtn + '</div>';
+        html += '<div class="card" style="text-align:center;"><div class="card-title">' + escapeHtml(c.label) + '</div><a href="' + c.url + '" target="_blank" class="action-btn" style="background:var(--dark-bg);">تواصل عبر ' + escapeHtml(c.platform) + '</a>' + delBtn + '</div>';
     }
     grid.innerHTML = html;
 }
@@ -418,10 +426,10 @@ function renderReviews() {
         html += '<div class="review-card">' +
             '<div>' +
                 '<div class="review-header">' +
-                    '<span class="review-author">' + r.name + '</span>' +
+                    '<span class="review-author">' + escapeHtml(r.name) + '</span>' +
                     '<span class="review-stars">' + starsHTML + '</span>' +
                 '</div>' +
-                '<div class="review-body">"' + r.text + '"</div>' +
+                '<div class="review-body">"' + escapeHtml(r.text) + '"</div>' +
             '</div>' +
             delBtn +
         '</div>';
@@ -433,9 +441,9 @@ function handleSaveReview(e) {
     e.preventDefault();
     var newReview = {
         id: Date.now(),
-        name: document.getElementById('review-name').value,
+        name: document.getElementById('review-name').value.trim(),
         rating: parseInt(document.getElementById('review-rating').value),
-        text: document.getElementById('review-text').value
+        text: document.getElementById('review-text').value.trim()
     };
     reviews.push(newReview);
     database.ref('reviews').set(reviews);
@@ -444,7 +452,7 @@ function handleSaveReview(e) {
 
 function deleteReview(id) {
     if (confirm("هل أنت تأكد من حذف هذا التقييم؟")) {
-        reviews = reviews.filter(function(r) { return r.id !== id; });
+        reviews = reviews.filter(function(r) { return String(r.id) !== String(id); });
         database.ref('reviews').set(reviews);
     }
 }
@@ -465,7 +473,7 @@ function renderBanner() {
 
 function handleSaveBanner(e) {
     e.preventDefault();
-    bannerData.text = document.getElementById('input-banner-text').value;
+    bannerData.text = document.getElementById('input-banner-text').value.trim();
     var fileInput = document.getElementById('input-banner-file');
     
     if (fileInput.files && fileInput.files[0]) {
@@ -484,7 +492,8 @@ function handleSaveBanner(e) {
 
 function removeBannerImg() {
     bannerData.img = "";
-    document.getElementById('input-banner-file').value = "";
+    var bannerFile = document.getElementById('input-banner-file');
+    if (bannerFile) bannerFile.value = "";
     alert("تمت إزالة الصورة! اضغط على (حفظ والتحديث) لتأكيد التغيير.");
 }
 
@@ -518,7 +527,6 @@ function openAddReviewModal() {
     openModal('add-review-modal');
 }
 
-// السلة تحافظ على الـ localStorage لأنها شخصية بكل متصفح
 var cart = JSON.parse(localStorage.getItem('akkad_cart')) || [];
 
 function addToCart(title, price) {
@@ -548,9 +556,9 @@ function updateCartUI() {
 
     for (var i = 0; i < cart.length; i++) {
         html += '<div class="cart-item">' +
-            '<span>' + cart[i].title + '</span>' +
+            '<span>' + escapeHtml(cart[i].title) + '</span>' +
             '<div>' +
-                '<strong style="margin-left: 10px;">' + cart[i].price + '</strong>' +
+                '<strong style="margin-left: 10px;">' + escapeHtml(cart[i].price) + '</strong>' +
                 '<button onclick="removeFromCart(' + i + ')" style="background:none; border:none; color:#ef4444; cursor:pointer;">✕</button>' +
             '</div>' +
         '</div>';
@@ -598,7 +606,7 @@ function sendCartToWhatsApp() {
     window.open("https://wa.me/" + phone + "?text=" + encodeURIComponent(message), '_blank');
 }
 
-// الثيم والوضع الليلي (شخصي)
+// الثيم والوضع الليلي
 var currentTheme = localStorage.getItem('akkad_theme') || 'light';
 
 function toggleTheme() {
@@ -700,6 +708,7 @@ function sendMessage() {
 
 function appendMessage(text, className) {
     var messagesDiv = document.getElementById('chat-messages');
+    if (!messagesDiv) return;
     var msgEl = document.createElement('div');
     msgEl.className = 'msg ' + className;
     msgEl.innerText = text;
@@ -718,4 +727,22 @@ function getAutoReply(userMessage) {
 function sendQuickReply(text) {
     appendMessage(text, 'user-msg');
     setTimeout(function() { appendMessage(getAutoReply(text), 'bot-msg'); }, 400);
+}
+
+// ==========================================
+// 9. دواء الحماية والتعقيم للرموز والحروف
+// ==========================================
+function escapeHtml(str) {
+    if (!str) return '';
+    return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+
+function escapeJsString(str) {
+    if (!str) return '';
+    return String(str).replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '\\"');
 }
