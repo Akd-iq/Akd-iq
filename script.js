@@ -27,16 +27,19 @@ var services = [];
 var features = [];
 var contacts = [];
 var reviews = [];
+var slides = []; // مصفوفة الصور الإعلانية
+var currentSlideIndex = 0;
 var bannerData = { text: "🎉 أهلاً بكم في متجر أكد!", img: "" };
 
 var activeCatId = null;
 var activeTradeFilter = 'all';
 
+var currentTheme = localStorage.getItem('akkad_theme') || 'light';
+
 // ==========================================
 // 3. الاستماع اللحظي للبيانات من Firebase
 // ==========================================
 document.addEventListener('DOMContentLoaded', function() {
-    // تطبيق الثيم المحفوظ
     applyTheme(currentTheme);
 
     // جلب الأقسام
@@ -45,7 +48,6 @@ document.addEventListener('DOMContentLoaded', function() {
         if (data) {
             categories = Array.isArray(data) ? data : Object.values(data);
         } else {
-            // بيانات افتراضية أول مرة فقط
             categories = [
                 { id: 1, name: 'الهواتف الذكية', type: 'trade' },
                 { id: 2, name: 'تقديم الاستمارات أونلاين', type: 'service' }
@@ -92,11 +94,24 @@ document.addEventListener('DOMContentLoaded', function() {
         renderReviews();
     });
 
-    // جلب الشريط الإعلاني
+    // جلب الشريط الإعلاني العلوي
     database.ref('banner').on('value', function(snapshot) {
         var data = snapshot.val();
         if (data) bannerData = data;
         renderBanner();
+    });
+
+    // جلب السلايدر (صور الواجهة الإعلانية)
+    database.ref('slides').on('value', function(snapshot) {
+        var data = snapshot.val();
+        if (data) {
+            slides = Array.isArray(data) ? data : Object.values(data);
+        } else {
+            // صورة افتراضية عند التشغيل لأول مرة
+            slides = [{ id: 1, img: 'logo.jpg', url: '' }];
+            database.ref('slides').set(slides);
+        }
+        renderSlider();
     });
 
     updateCartUI();
@@ -131,6 +146,7 @@ function toggleMode() {
 
 function renderAll() {
     renderBanner();
+    renderSlider();
     renderCategoryTabs();
     renderActiveCategoryContent();
     renderFeatures();
@@ -139,7 +155,121 @@ function renderAll() {
 }
 
 // ==========================================
-// 5. عرض ومعالجة الأقسام والمنتجات والخدمات
+// 5. عرض السلايدر وإدارته (صور واجهة الإعلانات)
+// ==========================================
+function renderSlider() {
+    var container = document.getElementById('hero-slider-container');
+    if (!container) return;
+
+    if (!slides || slides.length === 0) {
+        container.innerHTML = '<p style="text-align:center; color:#888;">لا توجد صور إعلانية حالياً.</p>';
+        return;
+    }
+
+    if (currentSlideIndex >= slides.length) currentSlideIndex = 0;
+
+    var currentSlide = slides[currentSlideIndex];
+    var hasUrl = currentSlide.url && currentSlide.url.trim() !== '';
+
+    var imgTag = '<img src="' + currentSlide.img + '" alt="إعلان" style="width:100%; max-height:350px; object-fit:cover; border-radius:12px; cursor:' + (hasUrl ? 'pointer' : 'default') + ';" onclick="handleSlideClick(' + currentSlideIndex + ')">';
+    
+    var controlsHTML = '<div class="slider-controls" style="display:flex; justify-content:space-between; align-items:center; margin-top:10px;">' +
+        '<button onclick="prevSlide()" class="sub-btn"><i class="fa-solid fa-chevron-right"></i> السابق</button>' +
+        '<span>' + (currentSlideIndex + 1) + ' / ' + slides.length + '</span>' +
+        '<button onclick="nextSlide()" class="sub-btn">التالي <i class="fa-solid fa-chevron-left"></i></button>' +
+    '</div>';
+
+    var adminControls = isAdmin ? 
+        '<div class="admin-only" style="margin-top:10px; text-align:center;">' +
+            '<button onclick="openAddSlideModal()" class="add-cat-btn" style="margin-right:5px;"><i class="fa-solid fa-plus"></i> إضافة صورة إعلان</button>' +
+            '<button onclick="deleteSlide(' + currentSlide.id + ')" class="delete-btn"><i class="fa-solid fa-trash"></i> حذف هذه الصورة</button>' +
+        '</div>' : '';
+
+    container.innerHTML = '<div class="slider-wrapper" style="position:relative;">' + imgTag + '</div>' + controlsHTML + adminControls;
+
+    // إضافة دعم السحب باللمس للأجهزة الذكية
+    setupTouchEvents(container);
+}
+
+function nextSlide() {
+    if (slides.length > 0) {
+        currentSlideIndex = (currentSlideIndex + 1) % slides.length;
+        renderSlider();
+    }
+}
+
+function prevSlide() {
+    if (slides.length > 0) {
+        currentSlideIndex = (currentSlideIndex - 1 + slides.length) % slides.length;
+        renderSlider();
+    }
+}
+
+function handleSlideClick(index) {
+    var slide = slides[index];
+    if (slide && slide.url && slide.url.trim() !== '') {
+        window.open(slide.url, '_blank');
+    }
+}
+
+function openAddSlideModal() {
+    openModal('add-slide-modal');
+}
+
+function handleAddSlide(e) {
+    e.preventDefault();
+    var fileInput = document.getElementById('slide-file-input');
+    var urlInput = document.getElementById('slide-url-input');
+
+    if (!fileInput.files || !fileInput.files[0]) {
+        alert("يرجى اختيار صورة للإعلان!");
+        return;
+    }
+
+    var reader = new FileReader();
+    reader.onload = function(event) {
+        var newSlide = {
+            id: Date.now(),
+            img: event.target.result,
+            url: urlInput ? urlInput.value.trim() : ''
+        };
+        slides.push(newSlide);
+        database.ref('slides').set(slides);
+        currentSlideIndex = slides.length - 1;
+        closeModal('add-slide-modal');
+        if (urlInput) urlInput.value = '';
+        fileInput.value = '';
+    };
+    reader.readAsDataURL(fileInput.files[0]);
+}
+
+function deleteSlide(id) {
+    if (slides.length <= 1) {
+        alert("يجب إبقاء صورة واحدة على الأقل في الواجهة!");
+        return;
+    }
+    if (confirm("هل أنت تأكد من حذف هذه الصورة الإعلانية؟")) {
+        slides = slides.filter(function(s) { return String(s.id) !== String(id); });
+        database.ref('slides').set(slides);
+        currentSlideIndex = 0;
+    }
+}
+
+// دعم اللمس والسحب باليد
+var touchStartX = 0;
+var touchEndX = 0;
+
+function setupTouchEvents(element) {
+    element.ontouchstart = function(e) { touchStartX = e.changedTouches[0].screenX; };
+    element.ontouchend = function(e) {
+        touchEndX = e.changedTouches[0].screenX;
+        if (touchStartX - touchEndX > 50) nextSlide();
+        if (touchEndX - touchStartX > 50) prevSlide();
+    };
+}
+
+// ==========================================
+// 6. باقي وظائف الأقسام والمنتجات والخدمات
 // ==========================================
 function renderCategoryTabs() {
     var tabsContainer = document.getElementById('category-tabs');
@@ -272,7 +402,7 @@ function editServiceBtnText(serviceId) {
 }
 
 // ==========================================
-// 6. الإضافة والحذف السحابي (Firebase)
+// 7. الإضافة والحذف السحابي (Firebase)
 // ==========================================
 function handleAddCategory(e) {
     e.preventDefault();
@@ -388,7 +518,7 @@ function deleteContact(id) {
 }
 
 // ==========================================
-// 7. باقي أقسام الصفحة (مميزات، تواصل، تقييمات، إعلان)
+// 8. باقي أجزاء الصفحة والخدمات العامة
 // ==========================================
 function renderFeatures() {
     var grid = document.getElementById('features-grid');
@@ -508,9 +638,6 @@ function closeBanner() {
     if (banner) banner.style.display = 'none';
 }
 
-// ==========================================
-// 8. النوافذ، السلة، البحث، والخدمات الإضافية
-// ==========================================
 function openModal(id) {
     var el = document.getElementById(id);
     if (el) el.style.display = 'block';
@@ -606,9 +733,6 @@ function sendCartToWhatsApp() {
     window.open("https://wa.me/" + phone + "?text=" + encodeURIComponent(message), '_blank');
 }
 
-// الثيم والوضع الليلي
-var currentTheme = localStorage.getItem('akkad_theme') || 'light';
-
 function toggleTheme() {
     currentTheme = (currentTheme === 'light') ? 'dark' : 'light';
     localStorage.setItem('akkad_theme', currentTheme);
@@ -687,7 +811,6 @@ function scrollToTop() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-// البوت والرد الآلي
 function toggleChatWindow() {
     var win = document.getElementById('chat-window');
     if (win) win.style.display = (win.style.display === 'none' || win.style.display === '') ? 'flex' : 'none';
@@ -709,7 +832,7 @@ function sendMessage() {
 function appendMessage(text, className) {
     var messagesDiv = document.getElementById('chat-messages');
     if (!messagesDiv) return;
-    var msgEl = document.createElement('div');
+    msgEl = document.createElement('div');
     msgEl.className = 'msg ' + className;
     msgEl.innerText = text;
     messagesDiv.appendChild(msgEl);
@@ -729,9 +852,6 @@ function sendQuickReply(text) {
     setTimeout(function() { appendMessage(getAutoReply(text), 'bot-msg'); }, 400);
 }
 
-// ==========================================
-// 9. دواء الحماية والتعقيم للرموز والحروف
-// ==========================================
 function escapeHtml(str) {
     if (!str) return '';
     return String(str)

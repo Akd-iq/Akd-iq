@@ -27,7 +27,7 @@
             <span id="banner-text">أهلاً بكم في متجر أكد!</span>
         </div>
         <div style="display: flex; align-items: center; gap: 10px;">
-            <button class="admin-only edit-banner-btn" onclick="openBannerModal()" style="background: #25d366; color: #fff; border: none; padding: 3px 8px; border-radius: 4px; cursor: pointer; font-size: 12px;">✏️️ تعديل الإعلان</button>
+            <button class="admin-only edit-banner-btn" onclick="openBannerModal()" style="background: #25d366; color: #fff; border: none; padding: 3px 8px; border-radius: 4px; cursor: pointer; font-size: 12px;">✏ تعديل الإعلان</button>
             <button class="close-banner-btn" onclick="closeBanner()">✕</button>
         </div>
     </div>
@@ -83,16 +83,11 @@
         </div>
     </header>
             
-    <!-- الواجهة الرئيسية (Hero Section) -->
+    <!-- الواجهة الرئيسية (Hero Section مع معرض الصور السحابي الإعلاني) -->
     <section id="home" class="hero">
         <div class="hero-content">
-            <!-- صورة الإعلان المترابطة مع رابط عند الضغط -->
-            <a id="hero-logo-link" href="#" target="_blank" style="display: inline-block; position: relative;">
-                <img id="hero-logo-img" src="logo.jpg" alt="أكد - AKD" class="hero-logo">
-            </a>
-            <br>
-            <!-- زر التعديل الخاص بالمالك للتحكم بالصورة والرابط -->
-            <button class="admin-only edit-banner-btn" onclick="openHeroModal()" style="background: #25d366; color: #fff; border: none; padding: 5px 12px; border-radius: 4px; cursor: pointer; font-size: 13px; margin-bottom: 15px; display: inline-block;">✏️ تعديل صورة ورابط الإعلان الرئيسي</button>
+            <!-- حاوية المعرض التفاعلي (السلايدر) الذي يتيح التنقل والتأشير باليد -->
+            <div id="hero-slider-container" style="max-width: 800px; margin: 0 auto 20px; padding: 0 10px;"></div>
 
             <h1>عالم التقنية والخدمات الإلكترونية بين يديك</h1>
             <p>أجهزة ذكية، ملحقات أصلية، وخدمات تقديم استمارات إلكترونية متكاملة.</p>
@@ -102,27 +97,6 @@
             </div>
         </div>
     </section>
-
-    <!-- نافذة تعديل إعلان الواجهة الرئيسية (خاصة بالمالك) -->
-    <div id="edit-hero-modal" class="modal" style="display: none;">
-        <div class="modal-content" style="background: #fff; padding: 20px; border-radius: 8px; max-width: 400px; margin: 50px auto; color: #333;">
-            <h3>تعديل صورة ورابط الإعلان الرئيسي</h3>
-            <form onsubmit="handleSaveHero(event)">
-                <div style="margin-bottom: 10px;">
-                    <label style="display: block; margin-bottom: 5px;">رابط الصورة (URL) أو اترك فارغاً للافتراضي:</label>
-                    <input type="text" id="input-hero-img" placeholder="https://... أو logo.jpg" style="width: 100%; padding: 8px; box-sizing: border-box;">
-                </div>
-                <div style="margin-bottom: 15px;">
-                    <label style="display: block; margin-bottom: 5px;">رابط الحساب / الموقع / الملف عند الضغط:</label>
-                    <input type="text" id="input-hero-link" placeholder="https://t.me/example أو https://wa.me/..." style="width: 100%; padding: 8px; box-sizing: border-box;">
-                </div>
-                <div style="display: flex; gap: 10px; justify-content: flex-end;">
-                    <button type="button" onclick="closeModal('edit-hero-modal')" style="padding: 8px 15px; cursor: pointer;">إلغاء</button>
-                    <button type="submit" style="background: #25d366; color: white; border: none; padding: 8px 15px; cursor: pointer; border-radius: 4px;">حفظ والتحديث</button>
-                </div>
-            </form>
-        </div>
-    </div>
 
     <!-- شريط البحث المباشر -->
     <div class="search-container">
@@ -241,6 +215,25 @@
     </section>
 
     <!-- ==================== النوافذ المنبثقة (Modals) ==================== -->
+
+    <!-- نافذة إضافة صورة إعلانية لمعرض الواجهة (خاصة بالمالك) -->
+    <div id="add-slide-modal" class="modal" style="display: none;">
+        <div class="modal-content" style="background: #fff; max-width: 450px; margin: 80px auto; padding: 20px; border-radius: 12px; color: #333;">
+            <span class="close-btn" onclick="closeModal('add-slide-modal')">&times;</span>
+            <h3 style="margin-bottom: 15px;">إضافة صورة إعلانية للواجهة</h3>
+            <form onsubmit="handleAddSlide(event)">
+                <div style="margin-bottom: 12px;">
+                    <label style="display: block; margin-bottom: 5px; font-weight: 600;">اختر صورة الإعلان من جهازك:</label>
+                    <input type="file" id="slide-file-input" accept="image/*" required style="width: 100%; padding: 5px; box-sizing: border-box;">
+                </div>
+                <div style="margin-bottom: 15px;">
+                    <label style="display: block; margin-bottom: 5px; font-weight: 600;">رابط (موقع / حساب / ملف) عند الضغط (اختياري):</label>
+                    <input type="url" id="slide-url-input" placeholder="https://example.com أو https://t.me/..." style="width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 6px;">
+                </div>
+                <button type="submit" style="background: #25d366; color: white; border: none; padding: 10px 15px; width: 100%; border-radius: 6px; cursor: pointer; font-weight: bold;">حفظ ونشر الإعلان</button>
+            </form>
+        </div>
+    </div>
 
     <!-- 1. نافذة إضافة قسم -->
     <div id="add-category-modal" class="modal">
