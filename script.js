@@ -216,16 +216,22 @@ function renderActiveCategoryContent() {
                 if (s.linkType === 'whatsapp') {
                     link = 'https://wa.me/' + s.linkVal + '?text=' + encodeURIComponent('مرحباً، أريد التقديم على ' + s.title);
                 }
-                var delBtnServ = isAdmin ? '<button class="delete-btn admin-only" onclick="deleteService(' + s.id + ')">حذف الخدمة</button>' : '';
                 
+                // نص الزر المخصص للخدمة أو الافتراضي
+                var actionBtnText = (s.btnText && s.btnText.trim() !== "") ? s.btnText : "تقديم الآن";
+
+                var delBtnServ = isAdmin ? '<button class="delete-btn admin-only" onclick="deleteService(' + s.id + ')">حذف الخدمة</button>' : '';
+                var editBtnText = isAdmin ? '<button class="admin-only" onclick="editServiceBtnText(' + s.id + ')" style="margin-top: 5px; background: #0284c7; color: #fff; border: none; padding: 5px 10px; border-radius: 6px; cursor: pointer; font-size: 0.85rem;"><i class="fa-solid fa-pen"></i> تعديل نص الزر</button>' : '';
+
                 servsHTML += '<div class="card">' +
                     '<div class="card-title">' + s.title + '</div>' +
                     '<div class="card-desc">' + s.desc + '</div>' +
                     '<div class="card-actions-wrapper">' +
-                        '<a href="' + link + '" target="_blank" class="action-btn" style="flex: 2;">تقديم الآن</a>' +
+                        '<a href="' + link + '" target="_blank" class="action-btn" style="flex: 2;">' + actionBtnText + '</a>' +
                         '<button onclick="addToCart(\'' + s.title + '\', \'حسب الخدمة\')" class="sub-action-btn" title="إضافة للسلة"><i class="fa-solid fa-cart-plus"></i> السلة</button>' +
                         '<button onclick="shareItem(\'' + s.title + '\', \'خدمة إلكترونية\')" class="sub-action-btn" title="مشاركة"><i class="fa-solid fa-share-nodes"></i> مشاركة</button>' +
                     '</div>' +
+                    editBtnText +
                     delBtnServ +
                 '</div>';
             }
@@ -238,6 +244,27 @@ function renderActiveCategoryContent() {
 function setTradeFilter(filter) {
     activeTradeFilter = filter;
     renderActiveCategoryContent();
+}
+
+// دالة لتعديل نص الزر مباشرة من حساب المالك للخدمة المحددة
+function editServiceBtnText(serviceId) {
+    var serviceIndex = -1;
+    for (var i = 0; i < services.length; i++) {
+        if (services[i].id === serviceId) {
+            serviceIndex = i;
+            break;
+        }
+    }
+
+    if (serviceIndex !== -1) {
+        var currentText = services[serviceIndex].btnText || "تقديم الآن";
+        var newText = prompt("أدخل الكلمة الجديدة للزر (مثل: قدم، احصل على الخدمة، قدم الآن...):", currentText);
+        if (newText !== null && newText.trim() !== "") {
+            services[serviceIndex].btnText = newText.trim();
+            database.ref('services').set(services);
+            showToast("تم تحديث نص الزر بنجاح! ✨");
+        }
+    }
 }
 
 // ==========================================
@@ -284,13 +311,17 @@ function openAddServiceModal(catId) {
 
 function handleAddService(e) {
     e.preventDefault();
+    var btnTextEl = document.getElementById('serv-btn-text');
+    var customBtnText = (btnTextEl && btnTextEl.value.trim() !== "") ? btnTextEl.value.trim() : "تقديم الآن";
+
     var newServ = {
         id: Date.now(),
         catId: parseInt(document.getElementById('serv-cat-id').value),
         title: document.getElementById('serv-title').value,
         desc: document.getElementById('serv-desc').value,
         linkType: document.getElementById('serv-link-type').value,
-        linkVal: document.getElementById('serv-link-value').value
+        linkVal: document.getElementById('serv-link-value').value,
+        btnText: customBtnText
     };
     services.push(newServ);
     database.ref('services').set(services);
